@@ -1,0 +1,9 @@
+deps/*
+ebin/*
+.rebar/*
+.rebar3/*
+rebar.lock
+*.dump
+.eunit/*
+src/*.beam
+src/*.swp

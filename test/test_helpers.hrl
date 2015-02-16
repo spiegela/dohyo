@@ -1,0 +1,1 @@
+-define(_proper_passes(F), proper:quickcheck(F, [{to_file, user}])).

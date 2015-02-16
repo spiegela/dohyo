@@ -66,7 +66,7 @@ types:
 dohyo:validate(presence, author)
 
 %% Check that they're included in some list of good values
-dohyo:validate(inclusion, some_field, ["value1", "value2", value3"])
+dohyo:validate(inclusion, some_field, ["value1", "value2", "value3"])
 
 %% or that they're excluded in some list of bad values
 dohyo:validate(exclusion, some_field, ["badvalue1", "badvalue2"])

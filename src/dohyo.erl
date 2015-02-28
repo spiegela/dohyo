@@ -99,7 +99,7 @@ find(Module, Id, State) ->
 -spec find_one(sumo:schema_name(), sumo:conditions(), term()) ->
   sumo:user_doc().
 find_one(Module, Conditions, State) ->
-  Plist = sumo:find(Module, Conditions),
+  Plist = sumo:find_one(Module, Conditions),
   dohyo_modifiers:after_read(Module, Plist, State).
 
 %% @doc

@@ -85,7 +85,7 @@ after_read(Module, Plist, State) ->
        ) ->
   sumo:user_doc().
 run_modifier(Trigger, Module, Plist, State) ->
-  lists:foldl( fun(Fun, Plist0) -> Fun(Plist0, State) end,
+  lists:foldl( fun(#modifier{func = Fun}, Plist0) -> Fun(Plist0, State) end,
                Plist,
                modifiers(Trigger, Module:schema())
              ).

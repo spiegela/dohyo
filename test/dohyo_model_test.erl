@@ -31,7 +31,49 @@
 -include_lib("proper/include/proper.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
-%%% Property Tests
+-include("test_helpers.hrl").
 
-property_test_() ->
-  [].
+-include("../src/dohyo.hrl").
+
+%%% Unit Test Descriptions
+
+unit_test_() ->
+  [ { "runs before_validate modifier",
+      { setup,
+        fun() -> mock_article_schema(article_schema()) end,
+        fun unload_article_mock/1,
+        fun returns_sumo_schema/0
+      }
+    }
+  ].
+
+returns_sumo_schema() ->
+  ?assertEqual(sumo_schema(), dohyo_model:sumo_schema(article)).
+
+sumo_schema() ->
+  sumo:new_schema(article,
+                  [ sumo:new_field(id, integer, [not_null, autoincrement]),
+                    sumo:new_field(title, string),
+                    sumo:new_field(content, text),
+                    sumo:new_field(author_id, integer, [not_null]),
+                    sumo:new_field(category_id, integer)
+                  ]).
+
+
+article_schema() ->
+  [ #field{name = id, type = integer, attrs = [not_null, autoincrement]},
+    #field{name = title, type = string},
+    #field{name = content, type = text},
+    #association{schema = comment, type = has_many, name = comments},
+    #association{schema = author, type = belongs_to, name = author,
+                 options = [{attrs, [not_null]}]},
+    #association{schema = category, type = belongs_to, name = category}
+  ].
+
+mock_article_schema(Schema) ->
+  meck:new(article, [non_strict]),
+  meck:expect(article, schema, [], Schema).
+
+unload_article_mock(_) ->
+  meck:unload(article).
+

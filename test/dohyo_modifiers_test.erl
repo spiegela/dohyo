@@ -1,0 +1,149 @@
+-module(dohyo_modifiers_test).
+
+-compile(export_all).
+
+-include_lib("proper/include/proper.hrl").
+-include_lib("eunit/include/eunit.hrl").
+
+-include("test_helpers.hrl").
+
+-include("../src/dohyo.hrl").
+
+%%% Unit Test Descriptions
+
+unit_test_() ->
+  [ { "runs before_validate modifier",
+      { setup,
+        fun() -> mock_login_schema(before_validate()) end,
+        fun unload_login_mock/1,
+        fun before_validate_runs/0
+      }
+    },
+    { "runs after_validate modifier",
+      { setup,
+        fun() -> mock_login_schema(after_validate()) end,
+        fun unload_login_mock/1,
+        fun after_validate_runs/0
+      }
+    },
+    { "runs before_commit modifier",
+      { setup,
+        fun() -> mock_login_schema(before_commit()) end,
+        fun unload_login_mock/1,
+        fun before_commit_runs/0
+      }
+    },
+    { "runs before_delete modifier",
+      { setup,
+        fun() -> mock_login_schema(before_delete()) end,
+        fun unload_login_mock/1,
+        fun before_delete_runs/0
+      }
+    },
+    { "runs after_read modifier",
+      { setup,
+        fun() -> mock_login_schema(after_read()) end,
+        fun unload_login_mock/1,
+        fun after_read_runs/0
+      }
+    }
+  ].
+
+%%% Unit Tests
+
+before_validate_runs() ->
+  Plist = dohyo_modifiers:before_validate(login, login(), []),
+  {_, Salt} = lists:keyfind(salt, 1, Plist),
+  ?assertEqual("123456", Salt).
+
+after_validate_runs() ->
+  Plist1 = dohyo_modifiers:before_validate(login, login(), []),
+  Plist2 = dohyo_modifiers:after_validate(login, Plist1, []),
+  Confirm = lists:keyfind(password_confirm, 1, Plist2),
+  ?assertEqual(false, Confirm).
+
+before_commit_runs() ->
+  Plist1 = dohyo_modifiers:before_validate(login, login(), []),
+  Plist2 = dohyo_modifiers:after_validate(login, Plist1, []),
+  Plist3 = dohyo_modifiers:before_commit(login, Plist2, []),
+  {_, Pass} = lists:keyfind(password, 1, Plist3),
+  ?assertEqual("12345612345", Pass).
+
+before_delete_runs() ->
+  ?assertError(
+    delete_contrained,
+    dohyo_modifiers:before_delete(login, before_delete(), [])
+  ).
+
+after_read_runs() ->
+  Plist = dohyo_modifiers:after_read(login, login(), []),
+  {_, Dyn} = lists:keyfind(dynamic, 1, Plist),
+  ?assertEqual("something cool", Dyn).
+
+%%% Fixtures
+
+login() ->
+  [ {username, "spiegela"},
+    {password, "12345"},
+    {password_confirm, "12345"}
+  ].
+
+
+before_validate() ->
+  [ #modifier{type = before_validate, func = fun add_fake_random_salt/2} |
+    login_schema()
+  ].
+
+after_validate() ->
+  [ #modifier{type = after_validate, func = fun strip_confirmation/2} |
+    before_validate()
+  ].
+
+before_commit() ->
+  [ #modifier{type = before_commit, func = fun fake_encrypt_password/2} |
+    after_validate()
+  ].
+
+before_delete() ->
+  [ #modifier{type = before_delete, func = fun fail_to_delete/2} |
+    login_schema()
+  ].
+
+after_read() ->
+  [ #modifier{type = after_read, func = fun add_dyn_field/2} |
+    login_schema()
+  ].
+
+login_schema() ->
+  [ #field{name = username, type = string},
+    #field{name = password, type = string},
+    #field{name = password_confirm, type = string}
+  ].
+
+%%% Utility Functions
+
+add_fake_random_salt(Plist, _State) ->
+  %% Shh.  It's not really random
+  lists:keystore(salt, 1, Plist, {salt, "123456"}).
+
+strip_confirmation(Plist, _State) ->
+  {value, _PassTup, Plist2} = lists:keytake(password_confirm, 1, Plist),
+  Plist2.
+
+fake_encrypt_password(Plist, _State) ->
+  %% Shh.  It's not really encrypted..
+  {_, Salt} = lists:keyfind(salt, 1, Plist),
+  {_, Pass} = lists:keyfind(password, 1, Plist),
+  lists:keystore(password, 1, Plist, {password, Salt ++ Pass}).
+
+add_dyn_field(Plist, _State) ->
+  lists:keystore(dynamic, 1, Plist, {dynamic, "something cool"}).
+
+fail_to_delete(_Plist, _State) ->
+  error(delete_contrained).
+
+unload_login_mock(_) -> meck:unload(login).
+
+mock_login_schema(Schema) ->
+  meck:new(login, [non_strict]),
+  meck:expect(login, schema, [], Schema).

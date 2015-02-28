@@ -73,7 +73,7 @@ dohyo:validate(exclusion, some_field, ["badvalue1", "badvalue2"])
 
 %% Check them against a `re` compatible regex string.  (don't use that pattern
 %% for actual email checking)
-dohyo:validate(format, email, "\w+@\w+\[.\w+]+")
+dohyo:validate(format, email, "\\w+@\\w+\[.\\w+]+")
 
 %% or that values are long enough
 dohyo:validate(length, email, 5)

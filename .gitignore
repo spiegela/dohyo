@@ -6,4 +6,4 @@ rebar.lock
 *.dump
 .eunit/*
 src/*.beam
-src/*.swp
+*.swp

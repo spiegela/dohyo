@@ -40,7 +40,9 @@
 %%%
 %%% API for association fetching
 %%%
--export([associate/3, associate_all/2, association/3, all_associations/2]).
+-export([associate/3, associate_all/2, association/3, all_associations/2,
+         associate_ids/3, association_ids/3, associate_all_ids/2,
+         all_association_ids/2]).
 
 %%%
 %%% API for model definition
@@ -294,6 +296,14 @@ associate(Module, Assoc, Plist) ->
                      {Module, Plist}
                    ).
 
+%% @doc Returns a new property-list with the requested associated ids inserted.
+-spec associate_ids(sumo:schema_name(), association_name(), sumo:user_doc()) ->
+  sumo:user_doc().
+associate_ids(Module, Assoc, Plist) ->
+  store_ids( lists:keyfind(Assoc, 4, Module:associations()),
+                     {Module, Plist}
+                   ).
+
 %% @doc
 %% Returns a new property-list with all defined associations' results for the
 %% schema inserted.
@@ -301,6 +311,14 @@ associate(Module, Assoc, Plist) ->
 -spec associate_all(sumo:schema_name(), sumo:user_doc()) -> sumo:user_doc().
 associate_all(Module, Plist) ->
   lists:foldl(fun store_association/2, {Module, Plist}, Module:assocations()).
+
+%% @doc
+%% Returns a new property-list with all defined associations' ids for the
+%% schema inserted.
+%% @end
+-spec associate_all_ids(sumo:schema_name(), sumo:user_doc()) -> sumo:user_doc().
+associate_all_ids(Module, Plist) ->
+  lists:foldl(fun store_ids/2, {Module, Plist}, Module:assocations()).
 
 %% @doc
 %% Returns a property (tuple) with the requested association results.
@@ -312,6 +330,19 @@ association(Module, AssocName, Plist) ->
   {AssocName, dohyo_associations:fetch(Module, Assoc, Plist)}.
 
 %% @doc
+%% Returns a property (tuple) with the requested association results.
+%% @end
+-spec association_ids(
+        sumo:schema_name(),
+        association_name(),
+        sumo:user_doc()
+      ) ->
+  [sumo:user_doc()] | sumo:user_doc().
+association_ids(Module, AssocName, Plist) ->
+  Assoc = lists:keyfind(AssocName, 4, Module:associations()),
+  {AssocName, dohyo_associations:fetch_ids(Module, Assoc, Plist)}.
+
+%% @doc
 %% Returns a property (tuple) with all defined associations' results for the
 %% schema.
 %% @end
@@ -319,6 +350,17 @@ association(Module, AssocName, Plist) ->
 all_associations(Module, Plist) ->
   lists:map(fun(#association{name = Name}=Assoc) ->
               {Name, dohyo_associations:fetch(Module, Assoc, Plist)}
+            end, Module:associations()).
+
+%% @doc
+%% Returns a property (tuple) with all defined associations' results for the
+%% schema.
+%% @end
+-spec all_association_ids(sumo:schema_name(), sumo:user_doc()) ->
+  sumo:user_doc().
+all_association_ids(Module, Plist) ->
+  lists:map(fun(#association{name = Name}=Assoc) ->
+              {Name, dohyo_associations:fetch_ids(Module, Assoc, Plist)}
             end, Module:associations()).
 
 %% @private
@@ -331,5 +373,18 @@ store_association(#association{name = Name}=Assoc, {Module, Plist}) ->
   { Module,
     lists:keystore( Name, 1, Plist,
                     {Name, dohyo_associations:fetch(Module, Assoc, Plist)}
+                  )
+  }.
+
+%% @private
+-spec store_ids(
+        #association{},
+        {sumo:schema_name(), sumo:user_doc()}
+       ) ->
+  sumo:user_doc().
+store_ids(#association{name = Name}=Assoc, {Module, Plist}) ->
+  { Module,
+    lists:keystore( Name, 1, Plist,
+                    {Name, dohyo_associations:fetch_ids(Module, Assoc, Plist)}
                   )
   }.

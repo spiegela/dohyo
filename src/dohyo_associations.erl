@@ -28,14 +28,21 @@
 
 -include_lib("dohyo.hrl").
 
--export[fetch/3, key/3].
+-export[fetch/3, fetch_ids/3, key/3].
+
+-spec fetch_ids(module(), #association{}, proplists:proplist()) ->
+  [string() | pos_integer()] | undefined.
+fetch_ids(Module, #association{type = has_many}=Assoc, Plist) ->
+  select_ids(Module, fetch(Module, Assoc, Plist));
+fetch_ids(Module, #association{type = belongs_to}=Assoc, Plist) ->
+  {_, Id} = lists:keyfind(key(local_key, Module, Assoc), 1, Plist), Id.
 
 -spec fetch(module(), #association{}, proplists:proplist()) ->
   [sumo:user_doc()] | sumo:user_doc() | undefined.
-fetch(Module, #association{type = has_many}=Assoc, Plist) ->
-  sumo:find_by(schema(Assoc), [conditions(Plist, Module, Assoc)]);
-fetch(Module, #association{type = belongs_to}=Assoc, Plist) ->
-  case sumo:find_one(schema(Assoc), [conditions(Plist, Module, Assoc)]) of
+fetch(Module, #association{schema = Schema, type = has_many}=Assoc, Plist) ->
+  sumo:find_by(Schema, [conditions(Plist, Module, Assoc)]);
+fetch(Module, #association{schema = Schema, type = belongs_to}=Assoc, Plist) ->
+  case sumo:find_one(Schema, [conditions(Plist, Module, Assoc)]) of
     not_found -> undefined;
     Element -> Element
   end.
@@ -68,11 +75,12 @@ append_id_to_atom(Assoc) ->
   list_to_atom(lists:concat([atom_to_list(Assoc), "_id"])).
 
 %% @private
--spec schema(#association{}) -> atom().
-schema(#association{name = Name, options = []}) ->
-  Name;
-schema(#association{name = Name, options = Opts}) ->
-  case lists:keyfind(schema, 1, Opts) of
-    false       -> Name;
-    {_, Schema} -> Schema
-  end.
+-spec select_ids(module(), [proplists:proplist()]) ->
+  [string() | pos_integer()].
+select_ids(Module, Entities) ->
+  Fun = fun(Entity) ->
+          {_, ID} =
+            lists:keyfind(sumo_internal:id_field_name(Module), 1, Entity),
+          ID
+        end,
+  lists:map(Fun, Entities).

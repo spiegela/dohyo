@@ -60,6 +60,6 @@ sumo_field(_Entry) ->
 -spec field_attrs(proplists:proplist()) -> [atom()].
 field_attrs(Opts) ->
   case lists:keyfind(attrs, 1, Opts) of
-    false -> [];
-    Attrs -> Attrs
+    false      -> [];
+    {_, Attrs} -> Attrs
   end.

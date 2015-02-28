@@ -262,23 +262,7 @@ To interact with your model, you'll use the interface API:
 
 ### TODOs
 
-* Put TODOs into Github issue log
-* Complete test-suite:
-  * dohyo module
-  * dohyo_hooks
-  * dohyo_hook_hanlder
-  * dohyo_model
-* Complete asynch hook implementation
-* Add has-many-through for many-to-many associations
-* Add polymorphic associations
-* Add uniqueness validation
-* Add ability to validate by function
-* Add range to length validation
-* Create "presenter" interface
-* Create Elixir code examples
-* Add options for parallelization of modifiers
-* Add collection modifier
-* Add options for lazy modifiers
+TODOs are on the [github issue log](http://github.com/spiegela/dohyo/issues).
 
 ## License
 

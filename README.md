@@ -1,12 +1,12 @@
 # Dohyo Model
-Dohyo is a relational mapper tool inspired by Rails ActiveRecord, while
-retaining functional programming characteristics.
+Dohyo is a relational mapper inspired by Rails ActiveRecord, while striving to
+retain functional programming characteristics.
 
-Dohyo adds advanced features for data modeling including:
+Dohyo adds features for data modeling including:
 * Field Validations
 * Relational Associations
-* Entity Modifiers
-* Asynchronous Hooks
+* Synchronous Entity Modifiers
+* Asynchronous Event Hooks
 
 It leans heavily on [SumoDB](https://github.com/inaka/sumo_db) for the base
 schema definition and database connectivity.
@@ -26,7 +26,7 @@ dohyo:field(title, text)
 
 These functions mimic the functionality of
 [SumoDB](https://github.com/inaka/sumo_db). Aliases are provided to keep the
-schema definition look clean.
+schema definition looking clean.
 
 ### Association definition
 
@@ -262,10 +262,23 @@ To interact with your model, you'll use the interface API:
 
 ### TODOs
 
-* Complete test-suite
+* Put TODOs into Github issue log
+* Complete test-suite:
+  * dohyo module
+  * dohyo_hooks
+  * dohyo_hook_hanlder
+  * dohyo_model
+* Complete asynch hook implementation
+* Add has-many-through for many-to-many associations
+* Add polymorphic associations
+* Add uniqueness validation
+* Add ability to validate by function
+* Add range to length validation
 * Create "presenter" interface
-* Complete planned validations
 * Create Elixir code examples
+* Add options for parallelization of modifiers
+* Add collection modifier
+* Add options for lazy modifiers
 
 ## License
 

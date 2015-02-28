@@ -7,6 +7,111 @@
 
 -include("test_helpers.hrl").
 
+-include("../src/dohyo.hrl").
+
+%%% Unit Test Descriptions
+
+unit_test_() ->
+  [ { "lack of inclusion arguments errors on run",
+      { setup,
+        fun() -> mock_person_schema(invalid_inclusion()) end,
+        fun unload_person_mock/1,
+        fun inclusion_lacks_args/0
+      }
+    },
+    { "failed inclusion throws on run",
+      { setup,
+        fun() -> mock_person_schema(valid_inclusion()) end,
+        fun unload_person_mock/1,
+        fun failed_inclusion_throws/0
+      }
+    },
+    { "passed inclusion is ok",
+      { setup,
+        fun() -> mock_person_schema(valid_inclusion()) end,
+        fun unload_person_mock/1,
+        fun passed_person/0
+      }
+    },
+    { "lack of exclusion arguments errors on run",
+      { setup,
+        fun() -> mock_person_schema(invalid_exclusion()) end,
+        fun unload_person_mock/1,
+        fun exclusion_lacks_args/0
+      }
+    },
+    { "failed exclusion throws on run",
+      { setup,
+        fun() -> mock_person_schema(valid_exclusion()) end,
+        fun unload_person_mock/1,
+        fun failed_exclusion_throws/0
+      }
+    },
+    { "passed exclusion is ok",
+      { setup,
+        fun() -> mock_person_schema(valid_exclusion()) end,
+        fun unload_person_mock/1,
+        fun passed_person/0
+      }
+    },
+    { "lack of format arguments errors on run",
+      { setup,
+        fun() -> mock_person_schema(invalid_format()) end,
+        fun unload_person_mock/1,
+        fun format_lacks_args/0
+      }
+    },
+    { "failed format throws on run",
+      { setup,
+        fun() -> mock_person_schema(valid_format()) end,
+        fun unload_person_mock/1,
+        fun failed_format_throws/0
+      }
+    },
+    { "passed format is ok",
+      { setup,
+        fun() -> mock_person_schema(valid_format()) end,
+        fun unload_person_mock/1,
+        fun passed_person/0
+      }
+    },
+    { "failed presence throws on run",
+      { setup,
+        fun() -> mock_person_schema(valid_presence()) end,
+        fun unload_person_mock/1,
+        fun failed_presence_throws/0
+      }
+    },
+    { "passed presence is ok",
+      { setup,
+        fun() -> mock_person_schema(valid_presence()) end,
+        fun unload_person_mock/1,
+        fun passed_person/0
+      }
+    },
+    { "lack of length arguments errors on run",
+      { setup,
+        fun() -> mock_person_schema(invalid_length()) end,
+        fun unload_person_mock/1,
+        fun length_lacks_args/0
+      }
+    },
+    { "failed length throws on run",
+      { setup,
+        fun() -> mock_person_schema(valid_length()) end,
+        fun unload_person_mock/1,
+        fun failed_length_throws/0
+      }
+    },
+    { "passed length is ok",
+      { setup,
+        fun() -> mock_person_schema(valid_length()) end,
+        fun unload_person_mock/1,
+        fun passed_person/0
+      }
+    }
+  ].
+
 %%% Property Tests
 
 property_test_() ->
@@ -53,6 +158,145 @@ property_test_() ->
       ?_proper_passes(valid_field_passes_length()), true
     )
 
+  ].
+
+%%% Unit Tests
+
+passed_person() ->
+  ?assertEqual(ok, dohyo_validations:validate(person, valid_person())).
+
+inclusion_lacks_args() ->
+  ?assertError(badarg, dohyo_validations:validate(person, valid_person())).
+
+failed_inclusion_throws() ->
+  ?assertThrow( {invalid_doc, [{salutation, not_included}]},
+                 dohyo_validations:validate(person, invalid_inclusion_person())
+              ).
+
+exclusion_lacks_args() ->
+  ?assertError(badarg, dohyo_validations:validate(person, valid_person())).
+
+failed_exclusion_throws() ->
+  ?assertThrow( {invalid_doc, [{salutation, not_excluded}]},
+                 dohyo_validations:validate(person, invalid_exclusion_person())
+              ).
+
+format_lacks_args() ->
+  ?assertError(badarg, dohyo_validations:validate(person, valid_person())).
+
+failed_format_throws() ->
+  ?assertThrow( {invalid_doc, [{pin, bad_format}]},
+                 dohyo_validations:validate(person, invalid_format_person())
+              ).
+
+failed_presence_throws() ->
+  ?assertThrow( {invalid_doc, [{name, not_present}]},
+                 dohyo_validations:validate(person, invalid_presence_person())
+              ).
+
+length_lacks_args() ->
+  ?assertError(badarg, dohyo_validations:validate(person, valid_person())).
+
+failed_length_throws() ->
+  ?assertThrow( {invalid_doc, [{pin, bad_length}]},
+                 dohyo_validations:validate(person, invalid_length_person())
+              ).
+
+%%% Fixtures
+
+invalid_inclusion() ->
+  [ #validation{type = inclusion, field = salutation, args = undefined} |
+    person_schema()
+  ].
+
+valid_inclusion() ->
+  [ #validation{type = inclusion, field = salutation,
+                args = ["Mr", "Mrs", "Ms"]} |
+    person_schema()
+  ].
+
+invalid_exclusion() ->
+  [ #validation{type = exclusion, field = salutation, args = undefined} |
+    person_schema()
+  ].
+
+valid_exclusion() ->
+  [ #validation{type = exclusion, field = salutation,
+                args = ["Mister", "Missus"]} |
+    person_schema()
+  ].
+
+invalid_format() ->
+  [ #validation{type = format, field = salutation, args = undefined} |
+    person_schema()
+  ].
+
+valid_format() ->
+  [ #validation{type = format, field = pin, args = "\\d+"} |
+    person_schema()
+  ].
+
+valid_presence() ->
+  [ #validation{type = presence, field = name} |
+    person_schema()
+  ].
+
+invalid_length() ->
+  [ #validation{type = length, field = salutation, args = undefined} |
+    person_schema()
+  ].
+
+valid_length() ->
+  [ #validation{type = length, field = pin, args = 4} |
+    person_schema()
+  ].
+
+person_schema() ->
+  [ #field{name = name, type = string},
+    #field{name = salutation, type = string},
+    #field{name = pin, type = string},
+    #field{name = suffix, type = string}
+  ].
+
+valid_person() ->
+  [ {name, "Aaron Spiegel"},
+    {salutation, "Mr"},
+    {pin, "1234"},
+    {suffix, undefined}
+  ].
+
+invalid_inclusion_person() ->
+  [ {name, "Aaron Spiegel"},
+    {salutation, "Or"},
+    {pin, "1234"},
+    {suffix, undefined}
+  ].
+
+invalid_exclusion_person() ->
+  [ {name, "Aaron Spiegel"},
+    {salutation, "Mister"},
+    {pin, "1234"},
+    {suffix, undefined}
+  ].
+
+invalid_format_person() ->
+  [ {name, "Aaron Spiegel"},
+    {salutation, "Mr"},
+    {pin, "abcd"},
+    {suffix, undefined}
+  ].
+
+invalid_presence_person() ->
+  [ {salutation, "Mr"},
+    {pin, "abcd"},
+    {suffix, undefined}
+  ].
+
+invalid_length_person() ->
+  [ {name, "Aaron Spiegel"},
+    {salutation, "Mr"},
+    {pin, "abcdefg"},
+    {suffix, undefined}
   ].
 
 %%% Properties
@@ -284,3 +528,9 @@ regex_matches(Binary, Regex) ->
     {match, _Captured} -> true;
     nomatch -> false
   end.
+
+unload_person_mock(_) -> meck:unload(person).
+
+mock_person_schema(Schema) ->
+  meck:new(person, [non_strict]),
+  meck:expect(person, schema, [], Schema).

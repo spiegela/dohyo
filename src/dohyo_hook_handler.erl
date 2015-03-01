@@ -46,7 +46,7 @@
 %%
 %% @spec start_link() -> {ok, Pid} | {error, Error}
 %% @end
--spec start_link(schema()) -> {ok, pid()}.
+-spec start_link(sumo:schema_name()) -> {ok, pid()}.
 start_link(Module) ->
   {ok, Pid} = gen_event:start_link({local, ?MODULE}),
   ok = set_model(Pid, Module),
@@ -56,7 +56,7 @@ start_link(Module) ->
 %% @doc
 %% Set the model for this hook handler.
 %%
--spec set_model(pid(), schema()) -> ok.
+-spec set_model(pid(), sumo:schema_name()) -> ok.
 set_model(Pid, Module) -> gen_event:notify(Pid, {set_model, Module}).
 
 %%% gen_event callbacks

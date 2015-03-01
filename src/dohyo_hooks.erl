@@ -41,7 +41,7 @@
 -spec start() -> ok.
 start() -> lists:foreach(fun start_and_register_handler/1, hook_schemas()).
 
--spec start_and_register_handler(schema()) -> ok.
+-spec start_and_register_handler(sumo:schema_name()) -> ok.
 start_and_register_handler(Schema) ->
   {ok, Pid} = dohyo_hook_handler:start_link(Schema),
   register_handler(Pid).
@@ -51,7 +51,10 @@ start_and_register_handler(Schema) ->
 %% @end
 -spec register_handler(pid()) -> ok.
 register_handler(Pid) ->
-  {ok, Events} = application:get_env(sumo_db, events),
+  Events = case application:get_env(sumo_db, events) of
+    undefined     -> [];
+    {ok, Events0} -> Events0
+  end,
   application:set_env(sumo_db, events, [Pid|Events]).
 
 %% @doc Run on_create hooks with the returned entity. Returns a `ok`.
@@ -76,30 +79,31 @@ on_delete_all(Module) -> run_hook_without_arg(on_delete_all, Module).
 
 %% @doc Returns a list of schemas with hooks defined
 %% @private
--spec hook_schemas() -> [schema()].
-hook_schemas() -> lists:filter(fun schema_has_hooks/1, get_schemas()).
+-spec hook_schemas() -> [sumo:schema_name()].
+hook_schemas() -> lists:filtermap(fun schema_with_hooks/1, get_schemas()).
 
 %% @doc
-%% Determins if a doc has any defined hooks.
+%% Selects doc with any defined hooks.
 %% @private
 %% @end
--spec schema_has_hooks(schema()) -> boolean().
-schema_has_hooks([]) -> false;
-schema_has_hooks([#hook{}|_T]) -> true;
-schema_has_hooks([_Entry|T]) -> schema_has_hooks(T).
+-spec schema_with_hooks({sumo:schema_name(), schema()}) ->
+  false | {true, sumo:schema_name()}.
+schema_with_hooks({_Module, []})          -> false;
+schema_with_hooks({ Module, [#hook{}|_T]}) -> {true, Module};
+schema_with_hooks({ Module, [_Entry|T]})  -> schema_with_hooks({Module, T}).
 
 %% @doc
 %% Returns all the configured schemas.
 %% @private
 %% @end
--spec get_schemas() -> [schema()].
-get_schemas() -> [ Module:schema() || Module <- get_docs()].
+-spec get_schemas() -> [{sumo:schema_name(), schema()}].
+get_schemas() -> [ {Module, Module:schema()} || Module <- get_docs()].
 
 %% @doc
 %% Returns all the configured docs.
 %% @private
 %% @end
--spec get_docs() -> [atom()].
+-spec get_docs() -> [sumo:schema_name()].
 get_docs() ->
   {ok, Docs} = application:get_env(sumo_db, docs),
   [Module || {Module, _Store} <- Docs].

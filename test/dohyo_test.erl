@@ -123,8 +123,10 @@ property_test_() ->
   [ ?_assertEqual(?_proper_passes(field_returns_record()), true),
     ?_assertEqual(?_proper_passes(field_with_args_returns_record()), true),
     ?_assertEqual(?_proper_passes(has_many_returns_record()), true),
+    ?_assertEqual(?_proper_passes(has_many_w_schema_returns_record()), true),
     ?_assertEqual(?_proper_passes(has_many_with_opts_returns_record()), true),
     ?_assertEqual(?_proper_passes(belongs_to_returns_record()), true),
+    ?_assertEqual(?_proper_passes(belongs_to_w_schema_returns_record()), true),
     ?_assertEqual(?_proper_passes(belongs_to_with_opts_returns_record()), true),
     ?_assertEqual(?_proper_passes(validate_returns_record()), true),
     ?_assertEqual(?_proper_passes(validate_with_args_returns_record()), true),
@@ -354,6 +356,13 @@ has_many_returns_record() ->
               #association{type = has_many, name = Name, schema = Name}
           end).
 
+has_many_w_schema_returns_record() ->
+  ?FORALL({Name, Schema}, {association_name(), atom()},
+          begin
+            dohyo:has_many(Name, [{schema, Schema}]) =:=
+              #association{type = has_many, name = Name, schema = Schema}
+          end).
+
 has_many_with_opts_returns_record() ->
   ?FORALL({Name, Opts}, {association_name(), proplists:proplist()},
           begin
@@ -367,6 +376,13 @@ belongs_to_returns_record() ->
           begin
             dohyo:belongs_to(Name) =:=
               #association{type = belongs_to, name = Name, schema = Name}
+          end).
+
+belongs_to_w_schema_returns_record() ->
+  ?FORALL({Name, Schema}, {association_name(), atom()},
+          begin
+            dohyo:belongs_to(Name, [{schema, Schema}]) =:=
+              #association{type = belongs_to, name = Name, schema = Schema}
           end).
 
 belongs_to_with_opts_returns_record() ->

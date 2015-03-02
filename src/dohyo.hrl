@@ -53,8 +53,8 @@
                        options = [] :: proplists:proplist() }).
 
 -type modifier_type() ::
-        before_validate | after_validate | before_delete | before_commit |
-        after_read.
+        before_validate | after_validate | before_delete_by | before_delete |
+        before_commit | after_read.
 -type modifier_fun() :: fun((sumo:user_doc(), term()) -> sumo:user_doc()).
 -record(modifier, {type :: modifier_type(), func :: modifier_fun()}).
 

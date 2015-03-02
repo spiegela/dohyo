@@ -244,6 +244,13 @@ before_commit(Fun) -> #modifier{type = before_commit, func = Fun}.
 before_delete(Fun) -> #modifier{type = before_delete, func = Fun}.
 
 %% @doc
+%% Returns a modifier record of type before_delete_by to be used a part of a
+%% schema
+%% @end
+-spec before_delete_by(modifier_fun()) -> #modifier{}.
+before_delete_by(Fun) -> #modifier{type = before_delete_by, func = Fun}.
+
+%% @doc
 %% Returns a modifier record of type after_read to be used a part of a
 %% schema
 %% @end

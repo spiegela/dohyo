@@ -66,6 +66,13 @@ unit_test_() ->
         fun before_delete_runs/0
       }
     },
+    { "runs before_delete_by modifier",
+      { setup,
+        fun() -> mock_login_schema(before_delete_by()) end,
+        fun unload_login_mock/1,
+        fun before_delete_by_runs/0
+      }
+    },
     { "runs after_read modifier",
       { setup,
         fun() -> mock_login_schema(after_read()) end,
@@ -101,6 +108,12 @@ before_delete_runs() ->
     dohyo_modifiers:before_delete(login, before_delete(), [])
   ).
 
+before_delete_by_runs() ->
+  ?assertError(
+    delete_contrained,
+    dohyo_modifiers:before_delete_by(login, before_delete_by(), [])
+  ).
+
 after_read_runs() ->
   Plist = dohyo_modifiers:after_read(login, login(), []),
   {_, Dyn} = lists:keyfind(dynamic, 1, Plist),
@@ -131,6 +144,11 @@ before_commit() ->
 
 before_delete() ->
   [ #modifier{type = before_delete, func = fun fail_to_delete/2} |
+    login_schema()
+  ].
+
+before_delete_by() ->
+  [ #modifier{type = before_delete_by, func = fun fail_to_delete/2} |
     login_schema()
   ].
 

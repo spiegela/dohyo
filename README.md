@@ -86,11 +86,12 @@ Important validations left add or improve:
 
 ### Entity modifier definition
 
-* `before_validate/1`
-* `after_validate/1`
-* `before_commit/1` <-- fires right after `after_validate/1`
-* `before_delete/1` <-- Not exactly sure what this could be used for...
-* `after_read/1` <-- fires when an entity gets fetched from the DB
+* `before_validate`
+* `after_validate`
+* `before_commit`
+* `before_delete`
+* `before_delete_by`
+* `after_read`
 
 These functions take a function with the follow spec:
 

@@ -84,7 +84,35 @@ unit_test_() ->
        { setup,
          fun setup_mocks/0,
          fun unload_mocks/1,
-         fun wrap_sumo_find_all/0
+         fun wrap_sumo_find_all_2/0
+       }
+    },
+    { "wraps sumo_db find_all/4",
+       { setup,
+         fun setup_mocks/0,
+         fun unload_mocks/1,
+         fun wrap_sumo_find_all_4/0
+       }
+    },
+    { "wraps sumo_db find_by/2",
+       { setup,
+         fun setup_mocks/0,
+         fun unload_mocks/1,
+         fun wrap_sumo_find_by_2/0
+       }
+    },
+    { "wraps sumo_db find_by/4",
+       { setup,
+         fun setup_mocks/0,
+         fun unload_mocks/1,
+         fun wrap_sumo_find_by_4/0
+       }
+    },
+    { "wraps sumo_db find_by/5",
+       { setup,
+         fun setup_mocks/0,
+         fun unload_mocks/1,
+         fun wrap_sumo_find_by_5/0
        }
     }
   ].
@@ -190,7 +218,7 @@ wrap_sumo_find_one() ->
     ?_assertEqual(1, meck:num_calls(fakemod, after_read, [Plist, []]))
   ].
 
-wrap_sumo_find_all() ->
+wrap_sumo_find_all_2() ->
   State = [],
   Plists = [login(),login(),login()],
   Plists = dohyo:find_all(login, State),
@@ -198,6 +226,57 @@ wrap_sumo_find_all() ->
     ?_assertEqual(1, meck:num_calls(login, schema, [])),
     ?_assert(meck:validate(sumo)),
     ?_assertEqual(1, meck:num_calls(sumo, find_all, [login])),
+    ?_assert(meck:validate(fakemod)),
+    ?_assertEqual(3, meck:num_calls(fakemod, after_read, [Plists, []]))
+  ].
+
+wrap_sumo_find_all_4() ->
+  State = [],
+  Plists = [login(),login(),login()],
+  Plists = dohyo:find_all(login, username, 10, 10, State),
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_all, [login, username, 10, 10])),
+    ?_assert(meck:validate(fakemod)),
+    ?_assertEqual(3, meck:num_calls(fakemod, after_read, [Plists, []]))
+  ].
+
+wrap_sumo_find_by_2() ->
+  State = [],
+  Conditions = [{username, "spiegela"}],
+  Plists = [login(),login(),login()],
+  Plists = dohyo:find_by(login, Conditions, State),
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, Conditions)),
+    ?_assert(meck:validate(fakemod)),
+    ?_assertEqual(3, meck:num_calls(fakemod, after_read, [Plists, []]))
+  ].
+
+wrap_sumo_find_by_4() ->
+  State = [],
+  Conditions = [{username, "spiegela"}],
+  Plists = [login(),login(),login()],
+  Plists = dohyo:find_by(login, Conditions, 10, 10, State),
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [login, Conditions, 10, 10])),
+    ?_assert(meck:validate(fakemod)),
+    ?_assertEqual(3, meck:num_calls(fakemod, after_read, [Plists, []]))
+  ].
+
+wrap_sumo_find_by_5() ->
+  State = [],
+  Conditions = [{username, "spiegela"}],
+  Plists = [login(),login(),login()],
+  Plists = dohyo:find_by(login, Conditions, username, 10, 10, State),
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [login, Conditions, username, 10, 10])),
     ?_assert(meck:validate(fakemod)),
     ?_assertEqual(3, meck:num_calls(fakemod, after_read, [Plists, []]))
   ].
@@ -221,7 +300,11 @@ setup_mocks() ->
   meck:expect(sumo, delete_all, [login], 22),
   meck:expect(sumo, find, [login, 5], Plist),
   meck:expect(sumo, find_one, [login, Conditions], Plist),
-  meck:expect(sumo, find_all, [login], [Plist,Plist,Plist])
+  meck:expect(sumo, find_all, [login], [Plist,Plist,Plist]),
+  meck:expect(sumo, find_all, [login, username, 10, 10], [Plist,Plist,Plist]),
+  meck:expect(sumo, find_by, [login, Conditions], [Plist,Plist,Plist]),
+  meck:expect(sumo, find_by, [login, Conditions, 10, 10], [Plist,Plist,Plist]),
+  meck:expect(sumo, find_by, [login, Conditions, username, 10, 10], [Plist,Plist,Plist])
   .
 
 unload_mocks(_) ->

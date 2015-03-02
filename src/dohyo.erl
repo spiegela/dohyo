@@ -33,7 +33,7 @@
 %%%
 %%% API for CRUD operations
 %%%
--export([persist/3, delete/2, delete_by/2, delete_all/1]).
+-export([persist/3, delete/3, delete_by/3, delete_all/2]).
 -export([find/3, find_all/2, find_all/5]).
 -export([find_by/3, find_by/5, find_by/6, find_one/3]).
 
@@ -51,7 +51,7 @@
 -export([has_many/1, has_many/2, belongs_to/1, belongs_to/2]).
 -export([validate/2, validate/3]).
 -export([before_validate/1, after_validate/1, before_commit/1, before_delete/1,
-         after_read/1]).
+         before_delete_by/1, after_read/1]).
 -export([on_create/1, on_update/1, on_delete/1, on_delete_all/1,
          on_schema_create/1]).
 
@@ -62,31 +62,37 @@ persist(Module, Plist, State) ->
   ok = dohyo_validations:validate(Module, Plist1),
   Plist2 = dohyo_modifiers:after_validate(Module, Plist1, State),
   Plist3 = dohyo_modifiers:before_commit(Module, Plist2, State),
-  sumo:persist(Module, Plist3).
+  Plist4 = sumo:persist(Module, Plist3),
+  dohyo_modifiers:after_read(Module, Plist4, State).
 
 %% @doc
 %% Alias sumo:delete/2 to keep consistent API.  Not validation or modifier is
 %% needed.
 %% @equiv sumo:delete(DocName, Id).
 %% @end
--spec delete(sumo:schema_name(), sumo:user_doc()) -> boolean().
-delete(Module, Id) -> sumo:delete(Module, Id).
+-spec delete(sumo:schema_name(), sumo:user_doc(), term()) -> boolean().
+delete(Module, Id, State) ->
+  Id1 = dohyo_modifiers:before_delete(Module, Id, State),
+  sumo:delete(Module, Id1).
 
 %% @doc
 %% Alias sumo:delete_by/2 to keep consistent API.  Not validation or modifier
 %% is needed.
 %% @equiv sumo:delete_by(DocName, Condistions).
 %% @end
--spec delete_by(sumo:schema_name(), sumo:conditions()) -> non_neg_integer().
-delete_by(Module, Conditions) -> sumo:delete_by(Module, Conditions).
+-spec delete_by(sumo:schema_name(), sumo:conditions(), term()) ->
+  non_neg_integer().
+delete_by(Module, Conditions, State) ->
+  Conditions = dohyo_modifiers:before_delete_by(Module, Conditions, State),
+  sumo:delete_by(Module, Conditions).
 
 %% @doc
 %% Alias sumo:delete_all/1 to keep consistent API.  Not validation or
 %% modifier is needed.
 %% @equiv sumo:delete_all(DocName).
 %% @end
--spec delete_all(sumo:schema_name()) -> non_neg_integer().
-delete_all(Module) -> sumo:delete_all(Module).
+-spec delete_all(sumo:schema_name(), term()) -> non_neg_integer().
+delete_all(Module, _State) -> sumo:delete_all(Module).
 
 %% @doc Returns the doc identified by Id having run modifier.
 -spec find(sumo:schema_name(), sumo:field_value(), term()) -> sumo:user_doc().

@@ -114,7 +114,6 @@ login() ->
     {password_confirm, "12345"}
   ].
 
-
 before_validate() ->
   [ #modifier{type = before_validate, func = fun add_fake_random_salt/2} |
     login_schema()

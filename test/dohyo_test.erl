@@ -204,27 +204,27 @@ unit_test_() ->
 %%% Property Tests
 
 property_test_() ->
-  [ ?_assertEqual(?_proper_passes(field_returns_record()), true),
-    ?_assertEqual(?_proper_passes(field_with_args_returns_record()), true),
-    ?_assertEqual(?_proper_passes(has_many_returns_record()), true),
-    ?_assertEqual(?_proper_passes(has_many_w_schema_returns_record()), true),
-    ?_assertEqual(?_proper_passes(has_many_with_opts_returns_record()), true),
-    ?_assertEqual(?_proper_passes(belongs_to_returns_record()), true),
-    ?_assertEqual(?_proper_passes(belongs_to_w_schema_returns_record()), true),
-    ?_assertEqual(?_proper_passes(belongs_to_with_opts_returns_record()), true),
-    ?_assertEqual(?_proper_passes(validate_returns_record()), true),
-    ?_assertEqual(?_proper_passes(validate_with_args_returns_record()), true),
-    ?_assertEqual(?_proper_passes(before_validate_returns_record()), true),
-    ?_assertEqual(?_proper_passes(after_validate_returns_record()), true),
-    ?_assertEqual(?_proper_passes(before_commit_returns_record()), true),
-    ?_assertEqual(?_proper_passes(before_delete_returns_record()), true),
-    ?_assertEqual(?_proper_passes(before_delete_by_returns_record()), true),
-    ?_assertEqual(?_proper_passes(after_read_returns_record()), true),
-    ?_assertEqual(?_proper_passes(on_create_returns_record()), true),
-    ?_assertEqual(?_proper_passes(on_update_returns_record()), true),
-    ?_assertEqual(?_proper_passes(on_delete_returns_record()), true),
-    ?_assertEqual(?_proper_passes(on_delete_all_returns_record()), true),
-    ?_assertEqual(?_proper_passes(on_schema_create_returns_record()), true)
+  [ ?_assertEqual(true, ?_proper_passes(field_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(field_with_args_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(has_many_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(has_many_w_schema_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(has_many_with_opts_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(belongs_to_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(belongs_to_w_schema_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(belongs_to_with_opts_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(validate_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(validate_with_args_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(before_validate_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(after_validate_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(before_commit_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(before_delete_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(before_delete_by_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(after_read_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(on_create_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(on_update_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(on_delete_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(on_delete_all_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(on_schema_create_returns_record()))
   ].
 
 %%% Unit Tests
@@ -232,63 +232,61 @@ property_test_() ->
 wrap_sumo_persist() ->
   State = [],
   Plist = dohyo:persist(login, login(), State),
-  [ ?_assertEqual(login(), Plist),
-    ?_assert(meck:validate(login)),
-    ?_assertEqual(4, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(fakemod)),
-    ?_assertEqual(1, meck:num_calls(fakemod, before_validate, [Plist, State])),
-    ?_assertEqual(1, meck:num_calls(fakemod, after_validate, [Plist, State])),
-    ?_assertEqual(1, meck:num_calls(fakemod, before_commit, [Plist, State])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, persist, [login, Plist])),
-    ?_assertEqual(1, meck:num_calls(fakemod, after_read, [Plist, State]))
+  [ ?assertEqual(login(), Plist),
+    ?assert(meck:validate(login)),
+    ?assertEqual(5, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(fakemod)),
+    ?assertEqual(1, meck:num_calls(fakemod, before_validate, [Plist, State])),
+    ?assertEqual(1, meck:num_calls(fakemod, after_validate, [Plist, State])),
+    ?assertEqual(1, meck:num_calls(fakemod, before_commit, [Plist, State])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, persist, [login, Plist])),
+    ?assertEqual(1, meck:num_calls(fakemod, after_read, [Plist, State]))
   ].
 
 wrap_sumo_delete() ->
   State = [],
   Id = 5,
   true = dohyo:delete(login, Id, State),
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(2, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(fakemod)),
-    ?_assertEqual(1, meck:num_calls(fakemod, before_delete, [Id, State])),
-    ?_assertEqual(1, meck:num_calls(sumo, delete, [login, Id]))
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(fakemod)),
+    ?assertEqual(1, meck:num_calls(fakemod, before_delete, [Id, State])),
+    ?assertEqual(1, meck:num_calls(sumo, delete, [login, Id]))
   ].
 
 wrap_sumo_delete_by() ->
   State = [],
   Conditions = [{username, "spiegela"}],
   11 = dohyo:delete_by(login, Conditions, State),
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(2, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(fakemod)),
-    ?_assertEqual(1, meck:num_calls( fakemod,
-                                     before_delete_by,
-                                     [Conditions, State]
-                                   )),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, delete_by, [login, Conditions]))
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(fakemod)),
+    ?assertEqual(1, meck:num_calls( fakemod,
+                                    before_delete_by,
+                                    [Conditions, State]
+                                  )),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, delete_by, [login, Conditions]))
   ].
 
 wrap_sumo_delete_all() ->
   State = [],
   22 = dohyo:delete_all(login, State),
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(2, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, delete_all, [login]))
+  [ ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, delete_all, [login]))
   ].
 
 wrap_sumo_find() ->
   State = [],
   Plist = login(),
   Plist = dohyo:find(login, 5, State),
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find, [login, 5])),
-    ?_assert(meck:validate(fakemod)),
-    ?_assertEqual(1, meck:num_calls(fakemod, after_read, [Plist, []]))
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find, [login, 5])),
+    ?assert(meck:validate(fakemod)),
+    ?assertEqual(1, meck:num_calls(fakemod, after_read, [Plist, []]))
   ].
 
 wrap_sumo_find_one() ->
@@ -296,36 +294,36 @@ wrap_sumo_find_one() ->
   Plist = login(),
   Conditions = [{username, "spiegela"}],
   Plist = dohyo:find_one(login, Conditions, State),
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_one, [login, Conditions])),
-    ?_assert(meck:validate(fakemod)),
-    ?_assertEqual(1, meck:num_calls(fakemod, after_read, [Plist, []]))
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_one, [login, Conditions])),
+    ?assert(meck:validate(fakemod)),
+    ?assertEqual(1, meck:num_calls(fakemod, after_read, [Plist, []]))
   ].
 
 wrap_sumo_find_all_2() ->
   State = [],
   Plists = [login(),login(),login()],
   Plists = dohyo:find_all(login, State),
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_all, [login])),
-    ?_assert(meck:validate(fakemod)),
-    ?_assertEqual(3, meck:num_calls(fakemod, after_read, [Plists, []]))
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(3, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_all, [login])),
+    ?assert(meck:validate(fakemod)),
+    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []]))
   ].
 
 wrap_sumo_find_all_4() ->
   State = [],
   Plists = [login(),login(),login()],
   Plists = dohyo:find_all(login, username, 10, 10, State),
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_all, [login, username, 10, 10])),
-    ?_assert(meck:validate(fakemod)),
-    ?_assertEqual(3, meck:num_calls(fakemod, after_read, [Plists, []]))
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(3, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_all, [login, username, 10, 10])),
+    ?assert(meck:validate(fakemod)),
+    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []]))
   ].
 
 wrap_sumo_find_by_2() ->
@@ -333,12 +331,12 @@ wrap_sumo_find_by_2() ->
   Conditions = [{username, "spiegela"}],
   Plists = [login(),login(),login()],
   Plists = dohyo:find_by(login, Conditions, State),
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, Conditions)),
-    ?_assert(meck:validate(fakemod)),
-    ?_assertEqual(3, meck:num_calls(fakemod, after_read, [Plists, []]))
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(3, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_by, [login, Conditions])),
+    ?assert(meck:validate(fakemod)),
+    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []]))
   ].
 
 wrap_sumo_find_by_4() ->
@@ -346,68 +344,68 @@ wrap_sumo_find_by_4() ->
   Conditions = [{username, "spiegela"}],
   Plists = [login(),login(),login()],
   Plists = dohyo:find_by(login, Conditions, 10, 10, State),
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [login, Conditions, 10, 10])),
-    ?_assert(meck:validate(fakemod)),
-    ?_assertEqual(3, meck:num_calls(fakemod, after_read, [Plists, []]))
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(3, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_by, [login, Conditions, 10, 10])),
+    ?assert(meck:validate(fakemod)),
+    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []]))
   ].
 
 wrap_sumo_find_by_5() ->
   State = [],
   Conditions = [{username, "spiegela"}],
-  Plists = [login(),login(),login()],
-  Plists = dohyo:find_by(login, Conditions, username, 10, 10, State),
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [login, Conditions, username, 10, 10])),
-    ?_assert(meck:validate(fakemod)),
-    ?_assertEqual(3, meck:num_calls(fakemod, after_read, [Plists, []]))
+  Plists0 = [login(),login(),login()],
+  Plists1 = dohyo:find_by(login, Conditions, username, 10, 10, State),
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(3, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_by, [login, Conditions, username, 10, 10])),
+    ?assert(meck:validate(fakemod)),
+    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []])),
+    ?assertEqual(Plists0, Plists1)
   ].
 
 fetches_has_many_association() ->
   Login = login(),
   Roles = dohyo:association(login, roles, Login),
   Conditions = [{login_id, 5}],
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
-    ?_assertEqual(roles(), Roles)
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
+    ?assertEqual({roles, roles()}, Roles)
   ].
 
 fetches_belongs_to_association() ->
   Login = login(),
   Account = dohyo:association(login, account, Login),
   Conditions = [{id, 12}],
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [account, Conditions])),
-    ?_assertEqual(account(), Account)
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_one, [account, Conditions])),
+    ?assertEqual({account, account()}, Account)
   ].
 
 fetches_has_many_ids() ->
   Login = login(),
   RolesIds = dohyo:association_ids(login, roles, Login),
   Conditions = [{login_id, 5}],
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
-    ?_assertEqual([1,2,3], RolesIds)
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
+    ?assertEqual({roles, [1,2,3]}, RolesIds)
   ].
 
 fetches_belongs_to_ids() ->
   Login = login(),
   Account = dohyo:association_ids(login, account, Login),
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo_internal, id_field_name, [account])),
-    ?_assertEqual(12, Account)
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual({account, 12}, Account)
   ].
 
 fetches_all_associations() ->
@@ -415,23 +413,23 @@ fetches_all_associations() ->
   Assocs = dohyo:all_associations(login, Login),
   RoleConditions = [{login_id, 5}],
   AcctConditions = [{id, 12}],
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [account, AcctConditions])),
-    ?_assertEqual([{roles, roles()},{account,account()}], Assocs)
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
+    ?assertEqual(1, meck:num_calls(sumo, find_one, [account, AcctConditions])),
+    ?assertEqual([{roles, roles()},{account,account()}], Assocs)
   ].
 
 fetches_all_association_ids() ->
   Login = login(),
   AssocIds = dohyo:all_association_ids(login, Login),
   RoleConditions = [{login_id, 5}],
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
-    ?_assertEqual([{roles, [1,2,3]},{account,12}], AssocIds)
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
+    ?assertEqual([{roles, [1,2,3]},{account,12}], AssocIds)
   ].
 
 embeds_has_many_association() ->
@@ -439,11 +437,11 @@ embeds_has_many_association() ->
   Roles = roles(),
   Login2 = dohyo:associate(login, roles, Login),
   Conditions = [{login_id, 5}],
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
-    ?_assertEqual(Login ++ [{roles, Roles}], Login2)
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
+    ?assertEqual(Login ++ [{roles, Roles}], Login2)
   ].
 
 embeds_belongs_to_association() ->
@@ -451,32 +449,31 @@ embeds_belongs_to_association() ->
   Account = account(),
   Login2 = dohyo:associate(login, account, Login),
   Conditions = [{id, 12}],
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [account, Conditions])),
-    ?_assertEqual(Login ++ [{account,Account}], Login2)
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_one, [account, Conditions])),
+    ?assertEqual(Login ++ [{account,Account}], Login2)
   ].
 
 embeds_has_many_ids() ->
   Login = login(),
   Login2 = dohyo:associate_ids(login, roles, Login),
   Conditions = [{login_id, 5}],
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
-    ?_assertEqual(Login ++ [{roles,[1,2,3]}], Login2)
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
+    ?assertEqual(Login ++ [{roles,[1,2,3]}], Login2)
   ].
 
 embeds_belongs_to_ids() ->
   Login = login(),
   Login2 = dohyo:associate_ids(login, account, Login),
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo_internal, id_field_name, [account])),
-    ?_assertEqual(Login ++ [{account,12}], Login2)
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(Login ++ [{account,12}], Login2)
   ].
 
 embeds_all_associations() ->
@@ -484,23 +481,23 @@ embeds_all_associations() ->
   Login2 = dohyo:associate_all(login, Login),
   RoleConditions = [{login_id, 5}],
   AcctConditions = [{id, 12}],
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [account, AcctConditions])),
-    ?_assertEqual(Login ++ [{roles, roles()},{account,account()}], Login2)
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
+    ?assertEqual(1, meck:num_calls(sumo, find_one, [account, AcctConditions])),
+    ?assertEqual(Login ++ [{roles, roles()},{account,account()}], Login2)
   ].
 
 embeds_all_association_ids() ->
   Login = login(),
   Login2 = dohyo:associate_all_ids(login, Login),
   RoleConditions = [{login_id, 5}],
-  [ ?_assert(meck:validate(login)),
-    ?_assertEqual(1, meck:num_calls(login, schema, [])),
-    ?_assert(meck:validate(sumo)),
-    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
-    ?_assertEqual(Login ++ [{roles, [1,2,3]},{account,12}], Login2)
+  [ ?assert(meck:validate(login)),
+    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
+    ?assertEqual(Login ++ [{roles, [1,2,3]},{account,12}], Login2)
   ].
 
 %%% Setup Functions

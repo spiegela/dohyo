@@ -91,13 +91,13 @@ unit_test_() ->
 
 starts_and_registers_handler() ->
   ok = dohyo_hooks:start(),
-  [ ?_assertEqual({ok, [fakepid]}, application:get_env(sumo_db, events)),
-    ?_assert(meck:validate(dohyo_hook_handler)),
-    ?_assertEqual(meck:num_calls(dohyo_hook_handler, start_link, [article]), 1),
-    ?_assert(meck:validate(article)),
-    ?_assertEqual(meck:num_calls(article, schema , []), 1),
-    ?_assert(meck:validate(comment)),
-    ?_assertEqual(meck:num_calls(comment, schema , []), 1)
+  [ ?assertEqual({ok, [fakepid]}, application:get_env(sumo_db, events)),
+    ?assert(meck:validate(dohyo_hook_handler)),
+    ?assertEqual(1, meck:num_calls(dohyo_hook_handler, start_link, [article])),
+    ?assert(meck:validate(article)),
+    ?assertEqual(1, meck:num_calls(article, schema , [])),
+    ?assert(meck:validate(comment)),
+    ?assertEqual(1, meck:num_calls(comment, schema , []))
   ].
 
 starts_and_registers_handler2() ->
@@ -105,47 +105,47 @@ starts_and_registers_handler2() ->
   [ ?assertEqual( {ok, [fakepid,some_hook_handler_pid]},
                   application:get_env(sumo_db, events)
                 ),
-    ?_assert(meck:validate(dohyo_hook_handler)),
-    ?_assertEqual(meck:num_calls(dohyo_hook_handler, start_link, [article]), 1),
-    ?_assert(meck:validate(article)),
-    ?_assertEqual(meck:num_calls(article, schema , []), 1),
-    ?_assert(meck:validate(comment)),
-    ?_assertEqual(meck:num_calls(comment, schema , []), 1)
+    ?assert(meck:validate(dohyo_hook_handler)),
+    ?assertEqual(1, meck:num_calls(dohyo_hook_handler, start_link, [article])),
+    ?assert(meck:validate(article)),
+    ?assertEqual(1, meck:num_calls(article, schema , [])),
+    ?assert(meck:validate(comment)),
+    ?assertEqual(1, meck:num_calls(comment, schema , []))
   ].
 
 runs_on_create() ->
   ok = dohyo_hooks:on_create(article, []),
-  [ ?_assert(meck:validate(article)),
-    ?_assertEqual(meck:num_calls(article, schema , []), 1),
-    ?_assertEqual(meck:num_calls(fakemod, hook, ["fired"]), 1)
+  [ ?assert(meck:validate(article)),
+    ?assertEqual(1, meck:num_calls(article, schema , [])),
+    ?assertEqual(1, meck:num_calls(fakemod, hook, ["fired"]))
   ].
 
 runs_on_update() ->
   ok = dohyo_hooks:on_update(article, []),
-  [ ?_assert(meck:validate(article)),
-    ?_assertEqual(meck:num_calls(article, schema , []), 1),
-    ?_assertEqual(meck:num_calls(fakemod, hook, ["fired"]), 1)
+  [ ?assert(meck:validate(article)),
+    ?assertEqual(1, meck:num_calls(article, schema , [])),
+    ?assertEqual(1, meck:num_calls(fakemod, hook, ["fired"]))
   ].
 
 runs_on_delete() ->
   ok = dohyo_hooks:on_delete(article, 123),
-  [ ?_assert(meck:validate(article)),
-    ?_assertEqual(meck:num_calls(article, schema , []), 1),
-    ?_assertEqual(meck:num_calls(fakemod, hook, ["fired"]), 1)
+  [ ?assert(meck:validate(article)),
+    ?assertEqual(1, meck:num_calls(article, schema , [])),
+    ?assertEqual(1, meck:num_calls(fakemod, hook, ["fired"]))
   ].
 
 runs_on_delete_all() ->
   ok = dohyo_hooks:on_delete_all(article),
-  [ ?_assert(meck:validate(article)),
-    ?_assertEqual(meck:num_calls(article, schema , []), 1),
-    ?_assertEqual(meck:num_calls(fakemod, hook, ["fired"]), 1)
+  [ ?assert(meck:validate(article)),
+    ?assertEqual(1, meck:num_calls(article, schema , [])),
+    ?assertEqual(1, meck:num_calls(fakemod, hook, ["fired"]))
   ].
 
 runs_on_schema_create() ->
   ok = dohyo_hooks:on_schema_create(article),
-  [ ?_assert(meck:validate(article)),
-    ?_assertEqual(meck:num_calls(article, schema , []), 1),
-    ?_assertEqual(meck:num_calls(fakemod, hook, ["fired"]), 1)
+  [ ?assert(meck:validate(article)),
+    ?assertEqual(1, meck:num_calls(article, schema , [])),
+    ?assertEqual(1, meck:num_calls(fakemod, hook, ["fired"]))
   ].
 
 article_schema() ->

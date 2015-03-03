@@ -304,36 +304,44 @@ on_schema_create(Fun) -> #hook{type = on_schema_create, func = Fun}.
 %% @end
 -spec associate(sumo:schema_name(), association_name(), sumo:user_doc()) ->
   sumo:user_doc().
-associate(Module, Name, Plist) ->
-  store_association(dohyo_associations:lookup(Module, Name), {Module, Plist}).
+associate(Module, Name, Plist0) ->
+  {Module, Plist1} = store_association( dohyo_associations:lookup(Module, Name),
+                                        {Module, Plist0}
+                                      ),
+  Plist1.
 
 %% @doc Returns a new property-list with the requested associated ids inserted.
 -spec associate_ids(sumo:schema_name(), association_name(), sumo:user_doc()) ->
   sumo:user_doc().
-associate_ids(Module, Name, Plist) ->
-  store_ids(dohyo_associations:lookup(Module, Name), {Module, Plist}).
+associate_ids(Module, Name, Plist0) ->
+  {Module, Plist1} = store_ids( dohyo_associations:lookup(Module, Name),
+                                {Module, Plist0}
+                              ),
+  Plist1.
 
 %% @doc
 %% Returns a new property-list with all defined associations' results for the
 %% schema inserted.
 %% @end
 -spec associate_all(sumo:schema_name(), sumo:user_doc()) -> sumo:user_doc().
-associate_all(Module, Plist) ->
-  lists:foldl( fun store_association/2,
-               {Module, Plist},
-               dohyo_associations:lookup(Module)
-             ).
+associate_all(Module, Plist0) ->
+  {Module, Plist1} = lists:foldl( fun store_association/2,
+                                  {Module, Plist0},
+                                  dohyo_associations:lookup(Module)
+                                ),
+  Plist1.
 
 %% @doc
 %% Returns a new property-list with all defined associations' ids for the
 %% schema inserted.
 %% @end
 -spec associate_all_ids(sumo:schema_name(), sumo:user_doc()) -> sumo:user_doc().
-associate_all_ids(Module, Plist) ->
-  lists:foldl( fun store_ids/2,
-               {Module, Plist},
-               dohyo_associations:lookup(Module)
-             ).
+associate_all_ids(Module, Plist0) ->
+  {Module, Plist1} = lists:foldl( fun store_ids/2,
+                                  {Module, Plist0},
+                                  dohyo_associations:lookup(Module)
+                                ),
+  Plist1.
 
 %% @doc
 %% Returns a property (tuple) with the requested association results.

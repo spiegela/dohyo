@@ -182,12 +182,6 @@ article_3() ->
 
 author_2() -> [ {id, 2}, {name, "Aaron Spiegel"} ].
 
-author_3() -> [ {id, 3}, {name, "James Doe"} ].
-
-author_4() -> [ {id, 4}, {name, "Bob Siruncal"} ].
-
-author_5() -> [ {id, 5}, {name, "Sarah Bellum"} ].
-
 comment_1() -> [ {id, 3}, {article_id, 3}, {commenter_id, 3} ].
 
 comment_2() -> [ {id, 4}, {article_id, 3}, {commenter_id, 4} ].
@@ -201,9 +195,6 @@ belongs_to_author() ->
 
 has_many_comments() ->
   #association{schema = comment, type = has_many, name = comments}.
-
-belongs_to_commenter() ->
-  #association{schema = author, type = belongs_to, name = commenter}.
 
 belongs_to_user_as_author() ->
   #association{schema = author, type = belongs_to, name = author,

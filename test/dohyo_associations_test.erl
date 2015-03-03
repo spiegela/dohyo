@@ -61,6 +61,16 @@ unit_test_() ->
     },
     { "Article with author fetches id",
       article_belongs_to_author_id()
+    },
+    { "Errors on unknown association lookup",
+      { setup,
+        fun() ->
+          meck:new(login, [non_strict]),
+          meck:expect(login, schema, [], login_schema())
+        end,
+        fun(_) -> meck:unload(login) end,
+        association_lookup_badarg()
+      }
     }
   ].
 
@@ -108,6 +118,9 @@ article_belongs_to_author_id() ->
   Result = dohyo_associations:fetch_ids(article, belongs_to_author(), article_3()),
   meck:unload(sumo),
   ?_assertEqual(2, Result).
+
+association_lookup_badarg() ->
+  ?_assertError(badarg, dohyo_associations:lookup(login, whales)).
 
 association_keys() ->
  [ ?_assertEqual(
@@ -208,3 +221,17 @@ has_many_comments_as_another() ->
   #association{schema = comment, type = has_many, name = comments,
                options = [{local_key, another_id}]}.
  
+login_schema() ->
+  [ #field{name = username, type = string},
+    #field{name = password, type = string},
+    #field{name = password_confirm, type = string},
+    #association{type = has_many, name = roles, schema = role},
+    #association{type = belongs_to, name = account, schema = account},
+    #modifier{type = before_validate, func = fun fakemod:before_validate/2},
+    #modifier{type = after_validate, func = fun fakemod:after_validate/2},
+    #modifier{type = before_commit, func = fun fakemod:before_commit/2},
+    #modifier{type = before_delete, func = fun fakemod:before_delete/2},
+    #modifier{type = before_delete_by, func = fun fakemod:before_delete_by/2},
+    #modifier{type = after_read, func = fun fakemod:after_read/2}
+  ].
+

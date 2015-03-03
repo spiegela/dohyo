@@ -36,13 +36,13 @@ lookup(Module) ->
   lists:filter(Fun, Module:schema()).
 
 -spec lookup(sumo:schema_name(), association_name()) ->
-  #association{} | not_found.
+  #association{}.
 lookup(Module, Name1) ->
   Fun = fun(#association{name = Name}) when Name =:= Name1 -> false;
            (_Entity) -> true
         end,
   case lists:dropwhile(Fun, Module:schema()) of
-    []     -> not_found;
+    []     -> error(badarg);
     [X|_T] -> X
   end.
 

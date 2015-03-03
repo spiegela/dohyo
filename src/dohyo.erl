@@ -304,18 +304,14 @@ on_schema_create(Fun) -> #hook{type = on_schema_create, func = Fun}.
 %% @end
 -spec associate(sumo:schema_name(), association_name(), sumo:user_doc()) ->
   sumo:user_doc().
-associate(Module, Assoc, Plist) ->
-  store_association( lists:keyfind(Assoc, 4, Module:associations()),
-                     {Module, Plist}
-                   ).
+associate(Module, Name, Plist) ->
+  store_association(dohyo_associations:lookup(Module, Name), {Module, Plist}).
 
 %% @doc Returns a new property-list with the requested associated ids inserted.
 -spec associate_ids(sumo:schema_name(), association_name(), sumo:user_doc()) ->
   sumo:user_doc().
-associate_ids(Module, Assoc, Plist) ->
-  store_ids( lists:keyfind(Assoc, 4, Module:associations()),
-                     {Module, Plist}
-                   ).
+associate_ids(Module, Name, Plist) ->
+  store_ids(dohyo_associations:lookup(Module, Name), {Module, Plist}).
 
 %% @doc
 %% Returns a new property-list with all defined associations' results for the
@@ -323,7 +319,10 @@ associate_ids(Module, Assoc, Plist) ->
 %% @end
 -spec associate_all(sumo:schema_name(), sumo:user_doc()) -> sumo:user_doc().
 associate_all(Module, Plist) ->
-  lists:foldl(fun store_association/2, {Module, Plist}, Module:assocations()).
+  lists:foldl( fun store_association/2,
+               {Module, Plist},
+               dohyo_associations:lookup(Module)
+             ).
 
 %% @doc
 %% Returns a new property-list with all defined associations' ids for the
@@ -331,16 +330,22 @@ associate_all(Module, Plist) ->
 %% @end
 -spec associate_all_ids(sumo:schema_name(), sumo:user_doc()) -> sumo:user_doc().
 associate_all_ids(Module, Plist) ->
-  lists:foldl(fun store_ids/2, {Module, Plist}, Module:assocations()).
+  lists:foldl( fun store_ids/2,
+               {Module, Plist},
+               dohyo_associations:lookup(Module)
+             ).
 
 %% @doc
 %% Returns a property (tuple) with the requested association results.
 %% @end
 -spec association(sumo:schema_name(), association_name(), sumo:user_doc()) ->
   [sumo:user_doc()] | sumo:user_doc().
-association(Module, AssocName, Plist) ->
-  Assoc = lists:keyfind(AssocName, 4, Module:associations()),
-  {AssocName, dohyo_associations:fetch(Module, Assoc, Plist)}.
+association(Module, Name, Plist) ->
+  { Name,
+    dohyo_associations:fetch( Module,
+                              dohyo_associations:lookup(Module, Name),
+                              Plist
+                            ) }.
 
 %% @doc
 %% Returns a property (tuple) with the requested association results.
@@ -351,9 +356,12 @@ association(Module, AssocName, Plist) ->
         sumo:user_doc()
       ) ->
   [sumo:user_doc()] | sumo:user_doc().
-association_ids(Module, AssocName, Plist) ->
-  Assoc = lists:keyfind(AssocName, 4, Module:associations()),
-  {AssocName, dohyo_associations:fetch_ids(Module, Assoc, Plist)}.
+association_ids(Module, Name, Plist) ->
+  { Name,
+    dohyo_associations:fetch_ids( Module,
+                                  dohyo_associations:lookup(Module, Name),
+                                  Plist
+                                ) }.
 
 %% @doc
 %% Returns a property (tuple) with all defined associations' results for the
@@ -361,9 +369,11 @@ association_ids(Module, AssocName, Plist) ->
 %% @end
 -spec all_associations(sumo:schema_name(), sumo:user_doc()) -> sumo:user_doc().
 all_associations(Module, Plist) ->
-  lists:map(fun(#association{name = Name}=Assoc) ->
-              {Name, dohyo_associations:fetch(Module, Assoc, Plist)}
-            end, Module:associations()).
+  lists:map( fun(#association{name = Name}=Assoc) ->
+               {Name, dohyo_associations:fetch(Module, Assoc, Plist)}
+             end,
+             dohyo_associations:lookup(Module)
+           ).
 
 %% @doc
 %% Returns a property (tuple) with all defined associations' results for the
@@ -372,9 +382,11 @@ all_associations(Module, Plist) ->
 -spec all_association_ids(sumo:schema_name(), sumo:user_doc()) ->
   sumo:user_doc().
 all_association_ids(Module, Plist) ->
-  lists:map(fun(#association{name = Name}=Assoc) ->
-              {Name, dohyo_associations:fetch_ids(Module, Assoc, Plist)}
-            end, Module:associations()).
+  lists:map( fun(#association{name = Name}=Assoc) ->
+               {Name, dohyo_associations:fetch_ids(Module, Assoc, Plist)}
+             end,
+             dohyo_associations:lookup(Module)
+           ).
 
 %% @private
 -spec store_association(

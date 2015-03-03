@@ -98,6 +98,7 @@ article_has_no_comment_ids() ->
 
 article_has_comment_ids() ->
   meck:expect(sumo, find_by, [comment, [{article_id, 3}]], comment_list()),
+  meck:expect(sumo_internal, id_field_name, [comment], id),
   Result = dohyo_associations:fetch_ids(article, has_many_comments(), article_3()),
   meck:unload(sumo),
   ?_assertEqual([3,4,5], Result).

@@ -114,6 +114,34 @@ unit_test_() ->
          fun unload_mocks/1,
          fun wrap_sumo_find_by_5/0
        }
+    },
+    { "fetches has_many association",
+       { setup,
+         fun setup_assoc_mocks/0,
+         fun unload_assoc_mocks/1,
+         fun fetches_has_many_association/0
+       }
+    },
+    { "fetches belongs_to association",
+       { setup,
+         fun setup_assoc_mocks/0,
+         fun unload_assoc_mocks/1,
+         fun fetches_belongs_to_association/0
+       }
+    },
+    { "fetches has_many ids",
+       { setup,
+         fun setup_assoc_mocks/0,
+         fun unload_assoc_mocks/1,
+         fun fetches_has_many_ids/0
+       }
+    },
+    { "fetches belongs_to ids",
+       { setup,
+         fun setup_assoc_mocks/0,
+         fun unload_assoc_mocks/1,
+         fun fetches_belongs_to_ids/0
+       }
     }
   ].
 
@@ -283,6 +311,51 @@ wrap_sumo_find_by_5() ->
     ?_assertEqual(3, meck:num_calls(fakemod, after_read, [Plists, []]))
   ].
 
+fetches_has_many_association() ->
+  Login = login(),
+  Roles = dohyo:association(login, roles, Login),
+  Conditions = [{login_id, 5}],
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
+    ?_assertEqual(roles(), Roles)
+  ].
+
+fetches_belongs_to_association() ->
+  Login = login(),
+  Account = dohyo:association(login, account, Login),
+  Conditions = [{id, 12}],
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [account, Conditions])),
+    ?_assertEqual(account(), Account)
+  ].
+
+fetches_has_many_ids() ->
+  Login = login(),
+  RolesIds = dohyo:association_ids(login, roles, Login),
+  Conditions = [{login_id, 5}],
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
+    ?_assertEqual([1,2,3], RolesIds)
+  ].
+
+fetches_belongs_to_ids() ->
+  Login = login(),
+  Account = dohyo:association_ids(login, account, Login),
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo_internal, id_field_name, [account])),
+    ?_assertEqual(12, Account)
+  ].
+
+%%% Setup Functions
+
 setup_mocks() ->
   Plist = login(),
   Id = 5,
@@ -306,8 +379,18 @@ setup_mocks() ->
   meck:expect(sumo, find_all, [login, username, 10, 10], [Plist,Plist,Plist]),
   meck:expect(sumo, find_by, [login, Conditions], [Plist,Plist,Plist]),
   meck:expect(sumo, find_by, [login, Conditions, 10, 10], [Plist,Plist,Plist]),
-  meck:expect(sumo, find_by, [login, Conditions, username, 10, 10], [Plist,Plist,Plist])
-  .
+  meck:expect(sumo, find_by, [login, Conditions, username, 10, 10], [Plist,Plist,Plist]).  
+
+setup_assoc_mocks() ->
+  meck:new(login, [non_strict]),
+  meck:expect(login, schema, [], login_schema()),
+  meck:expect(sumo, find_one, [account, [{id,12}]], account()),
+  meck:expect(sumo, find_by, [role, [{login_id,5}]], roles()),
+  meck:expect(sumo_internal, id_field_name, [role], id).
+
+unload_assoc_mocks(_) ->
+  meck:unload(login),
+  meck:unload(sumo).
 
 unload_mocks(_) ->
   meck:unload(login),
@@ -320,6 +403,8 @@ login_schema() ->
   [ #field{name = username, type = string},
     #field{name = password, type = string},
     #field{name = password_confirm, type = string},
+    #association{type = has_many, name = roles, schema = role},
+    #association{type = belongs_to, name = account, schema = account},
     #modifier{type = before_validate, func = fun fakemod:before_validate/2},
     #modifier{type = after_validate, func = fun fakemod:after_validate/2},
     #modifier{type = before_commit, func = fun fakemod:before_commit/2},
@@ -329,9 +414,31 @@ login_schema() ->
   ].
 
 login() ->
-  [ {username, "spiegela"},
+  [ {id, 5},
+    {username, "spiegela"},
     {password, "12345"},
-    {password_confirm, "12345"}
+    {password_confirm, "12345"},
+    {account_id, 12}
+  ].
+
+roles() ->
+  [ [ {id, 1},
+      {login_id, 5},
+      {name, "admin"}
+    ],
+    [ {id, 2},
+      {login_id, 5},
+      {name, "user"}
+    ],
+    [ {id, 3},
+      {login_id, 5},
+      {name, "operator"}
+    ]
+  ].
+
+account() ->
+  [ {id, 12},
+    {name, "Acme Corp"}
   ].
 
 %%% Properties

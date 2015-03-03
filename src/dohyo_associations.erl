@@ -28,12 +28,28 @@
 
 -include_lib("dohyo.hrl").
 
--export[fetch/3, fetch_ids/3, key/3].
+-export[fetch/3, fetch_ids/3, key/3, lookup/1, lookup/2].
+
+-spec lookup(sumo:schema_name()) -> [#association{}].
+lookup(Module) ->
+  Fun = fun(#association{}) -> true; (_Entity) -> false end,
+  lists:filter(Fun, Module:schema()).
+
+-spec lookup(sumo:schema_name(), association_name()) ->
+  #association{} | not_found.
+lookup(Module, Name1) ->
+  Fun = fun(#association{name = Name}) when Name =:= Name1 -> false;
+           (_Entity) -> true
+        end,
+  case lists:dropwhile(Fun, Module:schema()) of
+    []     -> not_found;
+    [X|_T] -> X
+  end.
 
 -spec fetch_ids(module(), #association{}, proplists:proplist()) ->
   [string() | pos_integer()] | undefined.
-fetch_ids(Module, #association{type = has_many}=Assoc, Plist) ->
-  select_ids(Module, fetch(Module, Assoc, Plist));
+fetch_ids(Module, #association{type = has_many, schema = Schema}=Assoc, Plist) ->
+  select_ids(Schema, fetch(Module, Assoc, Plist));
 fetch_ids(Module, #association{type = belongs_to}=Assoc, Plist) ->
   {_, Id} = lists:keyfind(key(local_key, Module, Assoc), 1, Plist), Id.
 

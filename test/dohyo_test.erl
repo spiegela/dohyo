@@ -142,6 +142,62 @@ unit_test_() ->
          fun unload_assoc_mocks/1,
          fun fetches_belongs_to_ids/0
        }
+    },
+    { "fetches all associations",
+       { setup,
+         fun setup_assoc_mocks/0,
+         fun unload_assoc_mocks/1,
+         fun fetches_all_associations/0
+       }
+    },
+    { "fetches all associations ids",
+       { setup,
+         fun setup_assoc_mocks/0,
+         fun unload_assoc_mocks/1,
+         fun fetches_all_association_ids/0
+       }
+    },
+    { "embeds has_many association",
+       { setup,
+         fun setup_assoc_mocks/0,
+         fun unload_assoc_mocks/1,
+         fun embeds_has_many_association/0
+       }
+    },
+    { "embeds belongs_to association",
+       { setup,
+         fun setup_assoc_mocks/0,
+         fun unload_assoc_mocks/1,
+         fun embeds_belongs_to_association/0
+       }
+    },
+    { "embeds has_many ids",
+       { setup,
+         fun setup_assoc_mocks/0,
+         fun unload_assoc_mocks/1,
+         fun embeds_has_many_ids/0
+       }
+    },
+    { "embeds belongs_to ids",
+       { setup,
+         fun setup_assoc_mocks/0,
+         fun unload_assoc_mocks/1,
+         fun embeds_belongs_to_ids/0
+       }
+    },
+    { "embeds all associations",
+       { setup,
+         fun setup_assoc_mocks/0,
+         fun unload_assoc_mocks/1,
+         fun embeds_all_associations/0
+       }
+    },
+    { "embeds all associations ids",
+       { setup,
+         fun setup_assoc_mocks/0,
+         fun unload_assoc_mocks/1,
+         fun embeds_all_association_ids/0
+       }
     }
   ].
 
@@ -352,6 +408,99 @@ fetches_belongs_to_ids() ->
     ?_assert(meck:validate(sumo)),
     ?_assertEqual(1, meck:num_calls(sumo_internal, id_field_name, [account])),
     ?_assertEqual(12, Account)
+  ].
+
+fetches_all_associations() ->
+  Login = login(),
+  Assocs = dohyo:all_associations(login, Login),
+  RoleConditions = [{login_id, 5}],
+  AcctConditions = [{id, 12}],
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [account, AcctConditions])),
+    ?_assertEqual([{roles, roles()},{account,account()}], Assocs)
+  ].
+
+fetches_all_association_ids() ->
+  Login = login(),
+  AssocIds = dohyo:all_association_ids(login, Login),
+  RoleConditions = [{login_id, 5}],
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
+    ?_assertEqual([{roles, [1,2,3]},{account,12}], AssocIds)
+  ].
+
+embeds_has_many_association() ->
+  Login = login(),
+  Roles = roles(),
+  Login2 = dohyo:associate(login, roles, Login),
+  Conditions = [{login_id, 5}],
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
+    ?_assertEqual(Login ++ [{roles, Roles}], Login2)
+  ].
+
+embeds_belongs_to_association() ->
+  Login = login(),
+  Account = account(),
+  Login2 = dohyo:associate(login, account, Login),
+  Conditions = [{id, 12}],
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [account, Conditions])),
+    ?_assertEqual(Login ++ [{account,Account}], Login2)
+  ].
+
+embeds_has_many_ids() ->
+  Login = login(),
+  Login2 = dohyo:associate_ids(login, roles, Login),
+  Conditions = [{login_id, 5}],
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
+    ?_assertEqual(Login ++ [{roles,[1,2,3]}], Login2)
+  ].
+
+embeds_belongs_to_ids() ->
+  Login = login(),
+  Login2 = dohyo:associate_ids(login, account, Login),
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo_internal, id_field_name, [account])),
+    ?_assertEqual(Login ++ [{account,12}], Login2)
+  ].
+
+embeds_all_associations() ->
+  Login = login(),
+  Login2 = dohyo:associate_all(login, Login),
+  RoleConditions = [{login_id, 5}],
+  AcctConditions = [{id, 12}],
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [account, AcctConditions])),
+    ?_assertEqual(Login ++ [{roles, roles()},{account,account()}], Login2)
+  ].
+
+embeds_all_association_ids() ->
+  Login = login(),
+  Login2 = dohyo:associate_all_ids(login, Login),
+  RoleConditions = [{login_id, 5}],
+  [ ?_assert(meck:validate(login)),
+    ?_assertEqual(1, meck:num_calls(login, schema, [])),
+    ?_assert(meck:validate(sumo)),
+    ?_assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
+    ?_assertEqual(Login ++ [{roles, [1,2,3]},{account,12}], Login2)
   ].
 
 %%% Setup Functions

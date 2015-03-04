@@ -37,7 +37,6 @@
 
 unit_test_() ->
   meck:expect(sumo_internal, id_field_name, [article], id),
-
   [ { "association key translate correctly",
       association_keys()
     },

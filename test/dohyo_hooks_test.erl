@@ -92,8 +92,8 @@ unit_test_() ->
 starts_and_registers_handler() ->
   ok = dohyo_hooks:start(),
   [ ?assertEqual({ok, [fakepid]}, application:get_env(sumo_db, events)),
-    ?assert(meck:validate(dohyo_hook_handler)),
-    ?assertEqual(1, meck:num_calls(dohyo_hook_handler, start_link, [article])),
+    ?assert(meck:validate(dohyo_sup)),
+    ?assertEqual(1, meck:num_calls(dohyo_sup, start_hook_handler, [article])),
     ?assert(meck:validate(article)),
     ?assertEqual(1, meck:num_calls(article, schema , [])),
     ?assert(meck:validate(comment)),
@@ -105,8 +105,8 @@ starts_and_registers_handler2() ->
   [ ?assertEqual( {ok, [fakepid,some_hook_handler_pid]},
                   application:get_env(sumo_db, events)
                 ),
-    ?assert(meck:validate(dohyo_hook_handler)),
-    ?assertEqual(1, meck:num_calls(dohyo_hook_handler, start_link, [article])),
+    ?assert(meck:validate(dohyo_sup)),
+    ?assertEqual(1, meck:num_calls(dohyo_sup, start_hook_handler, [article])),
     ?assert(meck:validate(article)),
     ?assertEqual(1, meck:num_calls(article, schema , [])),
     ?assert(meck:validate(comment)),
@@ -167,7 +167,7 @@ comment_schema() ->
   ].
 
 mock_hook_handler_setup() ->
-  meck:expect(dohyo_hook_handler, start_link, [article], {ok, fakepid}),
+  meck:expect(dohyo_sup, start_hook_handler, [article], {ok, fakepid}),
   meck:new(article, [non_strict]),
   meck:expect(article, schema, [], article_schema()),
   meck:new(comment, [non_strict]),
@@ -181,7 +181,7 @@ mock_hook_handler_setup2() ->
   application:set_env(sumo_db, events, [some_hook_handler_pid]).
 
 unmock_hook_handler_setup(_) ->
-  meck:unload(dohyo_hook_handler),
+  meck:unload(dohyo_sup),
   meck:unload(article),
   meck:unload(comment),
   meck:unload(fakemod),

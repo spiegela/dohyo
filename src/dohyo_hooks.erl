@@ -43,7 +43,7 @@ start() -> lists:foreach(fun start_and_register_handler/1, hook_schemas()).
 
 -spec start_and_register_handler(sumo:schema_name()) -> ok.
 start_and_register_handler(Schema) ->
-  {ok, Pid} = dohyo_hook_handler:start_link(Schema),
+  {ok, Pid} = dohyo_sup:start_hook_handler(Schema),
   register_handler(Pid).
 
 %% @doc

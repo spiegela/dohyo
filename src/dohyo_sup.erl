@@ -29,7 +29,7 @@
 -behaviour(supervisor).
 
 %% API functions
--export([start_link/0]).
+-export([start_link/0, start_hook_handler/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -47,6 +47,19 @@
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
+
+%% @doc
+%% Starts a new hook handler
+%%
+%% @spec start_hook_handler() -> {ok, Pid} | ignore | {error, Error}
+%% @end
+start_hook_handler(Schema) ->
+  Child = list_to_atom(lists:concat([atom_to_list(Schema),"_hook_handler"])),
+  supervisor:start_child( ?MODULE,
+                          ?CHILD(Child, dohyo_hook_handler, worker, [Schema])
+                        ).
+
+
 %%% Supervisor callbacks
 
 %% @private
@@ -61,6 +74,6 @@ start_link() ->
 %%                     {error, Reason}
 %% @end
 init([]) ->
-    {ok, {{one_for_one, 5, 10}, [?CHILD('SomeChild', 'SomeModule', worker, [])]}}.
+    {ok, {{one_for_one, 5, 10}, []}}.
 
 %%% Internal functions

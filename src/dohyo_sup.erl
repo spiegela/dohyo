@@ -45,7 +45,9 @@
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+  {ok, Pid} = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
+  dohyo_hooks:start(),
+  {ok, Pid}.
 
 
 %% @doc

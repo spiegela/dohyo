@@ -36,68 +36,93 @@
 %%% Unit Test Descriptions
 
 unit_test_() ->
-  meck:expect(sumo_internal, id_field_name, [article], id),
   [ % { "association key translate correctly",
     %   association_keys()
     % },
     { "Article with comments fetches empty list",
       { setup,
         fun() -> 
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:expect(sumo, find_by, [comment, [{article_id, 3}]], [])
         end,
-        fun(_) -> meck:unload(sumo) end,
+        fun(_) ->
+          meck:unload(sumo_internal),
+          meck:unload(sumo)
+        end,
         fun article_has_comments/0
       }
     },
     { "Article with no comments fetches list",
       { setup,
         fun() -> 
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:expect(sumo, find_by, [comment, [{article_id, 3}]],
                       comment_list())
         end,
-        fun(_) -> meck:unload(sumo) end,
+        fun(_) ->
+            meck:unload(sumo_internal),
+            meck:unload(sumo)
+        end,
         fun article_has_no_comments/0
       }
     },
-    { "Article with not author fetches undefined",
+    { "Article with no author fetches undefined",
       { setup,
         fun() -> 
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:expect(sumo, find_one, [author, [{id, 2}]], not_found)
         end,
-        fun(_) -> meck:unload(sumo) end,
+        fun(_) ->
+            meck:unload(sumo_internal),
+            meck:unload(sumo)
+        end,
         fun article_belongs_to_null_author/0
       }
     },
     { "Article with author fetches plist",
       { setup,
         fun() -> 
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:expect(sumo, find_one, [author, [{id, 2}]], author_2())
         end,
-        fun(_) -> meck:unload(sumo) end,
-        fun article_belongs_to_author/0
-      }
-    },
-    { "Article with comments fetches id list",
-      { setup,
-        fun() -> 
-          meck:expect(sumo, find_by, [comment, [{article_id, 3}]], [])
+        fun(_) ->
+            meck:unload(sumo_internal),
+            meck:unload(sumo)
         end,
-        fun(_) -> meck:unload(sumo) end,
-        fun article_has_comment_ids/0
+        fun article_belongs_to_author/0
       }
     },
     { "Article with no comments fetches empty id list",
       { setup,
         fun() -> 
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
+          meck:new(article, [non_strict]),
+          meck:expect(article, schema, [], article_schema()),
+          meck:expect(sumo, find_by, [comment, [{article_id, 3}]], [])
+        end,
+        fun(_) ->
+          meck:unload(article),
+          meck:unload(sumo_internal),
+          meck:unload(sumo)
+        end,
+        fun article_has_no_comment_ids/0
+      }
+    },
+    { "Article with comments fetches id list",
+      { setup,
+        fun() -> 
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
+          meck:new(article, [non_strict]),
+          meck:expect(article, schema, [], article_schema()),
           meck:expect(sumo, find_by, [comment, [{article_id, 3}]],
-                      comment_list()),
-          meck:expect(sumo_internal, id_field_name, [comment], id)
+                      comment_list())
         end,
         fun(_) ->
           meck:unload(sumo),
+          meck:unload(article),
           meck:unload(sumo_internal)
         end,
-        fun article_has_no_comment_ids/0
+        fun article_has_comment_ids/0
       }
     },
     { "Article with author fetches id",
@@ -109,32 +134,33 @@ unit_test_() ->
         fun article_belongs_to_author_id/0
       }
     },
-    % { "Tag with article fetches plist",
-    %   { setup,
-    %     fun() -> 
-    %       meck:expect(sumo,
-    %                   find_by,
-    %                   [tag, [{taggable_type, page},{page_id, 1}]],
-    %                   [tag_1(), tag_3()]
-    %                  )
-    %     end,
-    %     fun(_) -> meck:unload(sumo) end,
-    %     fun tag_belongs_to_taggable_page/0
-    %   }
-    % },
-    % { "Page with many tags fetches tags",
-    %   { setup,
-    %     fun() -> 
-    %       meck:expect(sumo, find_one, [page, [{id, 2}]], tag_1()),
-    %       meck:expect(sumo_internal, id_field_name, [comment], id)
-    %     end,
-    %     fun(_) ->
-    %       meck:unload(sumo),
-    %       meck:unload(sumo_internal)
-    %     end,
-    %     fun page_has_many_tags_as_taggable/0
-    %   }
-    % },
+    { "Tag with taggable page fetches plist",
+      { setup,
+        fun() -> 
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
+          meck:expect(sumo, find_one, [page, [{id, 1}]], tag_1())
+        end,
+        fun(_) -> meck:unload(sumo) end,
+        fun tag_belongs_to_taggable_page/0
+      }
+    },
+    { "Page with many tags fetches tags",
+      { setup,
+        fun() -> 
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
+          meck:expect(sumo,
+                      find_by,
+                      [tag, [{taggable_id, 1},{taggable_type, page}]],
+                      [tag_1(), tag_3()]
+                     )
+        end,
+        fun(_) ->
+          meck:unload(sumo),
+          meck:unload(sumo_internal)
+        end,
+        fun page_has_many_tags_as_taggable/0
+      }
+    },
     { "Errors on unknown association lookup",
       { setup,
         fun() ->
@@ -182,8 +208,8 @@ page_has_many_tags_as_taggable() ->
   ?_assertEqual([tag_1(), tag_3()], Result).
 
 tag_belongs_to_taggable_page() ->
-  Result = dohyo_associations:fetch(tag, belongs_to_taggable(), page_1()),
-  ?_assertEqual(tag_1(), Result).
+  Result = dohyo_associations:fetch(tag, belongs_to_taggable(), tag_1()),
+  ?_assertEqual(page_1(), Result).
 
 association_lookup_badarg() ->
   ?_assertError(badarg, dohyo_associations:lookup(login, whales)).
@@ -312,7 +338,19 @@ belongs_to_as_special() ->
 has_many_comments_as_another() ->
   #association{type = has_many, name = comments,
                options = #{schema => comment, local_key => another_id}}.
- 
+
+article_schema() ->
+  [ #field{name = id, type = integer, attrs = [not_null, autoincrement]},
+    #field{name = title, type = string},
+    #field{name = content, type = text},
+    #association{type = has_many, name = comments,
+                 options = #{schema => comment}},
+    #association{type = belongs_to, name = author,
+                 options = #{schema => author, attrs => [not_null]}},
+    #association{type = belongs_to, name = category,
+                 options = #{schema => category}}
+  ].
+
 login_schema() ->
   [ #field{name = username, type = string},
     #field{name = password, type = string},

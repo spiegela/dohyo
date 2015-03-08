@@ -47,10 +47,16 @@
 
 -type association_type() :: belongs_to | has_many.
 -type association_name() :: atom().
--record(association, { type         :: association_type(),
-                       schema       :: module(),
-                       name         :: association_name(),
-                       options = [] :: proplists:proplist() }).
+-type association_opts() :: #{ schema      => atom(),
+                               polymorphic => boolean(),
+                               as          => atom(),
+                               local_key   => atom(),
+                               foreign_key => atom(),
+                               attrs       => field_attrs()
+                             }.
+-record(association, { type          :: association_type(),
+                       name          :: association_name(),
+                       options = #{} :: association_opts() }).
 
 -type modifier_type() ::
         before_validate | after_validate | before_delete_by | before_delete |
@@ -66,5 +72,3 @@
 -type schema() :: [schema_entry()].
 -type schema_entry() ::
         #field{} | #validation{} | #association{} | #modifier{} | #hook{}.
-
--type key_type() :: local_key | foreign_key.

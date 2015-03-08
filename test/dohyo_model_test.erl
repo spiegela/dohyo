@@ -64,10 +64,12 @@ article_schema() ->
   [ #field{name = id, type = integer, attrs = [not_null, autoincrement]},
     #field{name = title, type = string},
     #field{name = content, type = text},
-    #association{schema = comment, type = has_many, name = comments},
-    #association{schema = author, type = belongs_to, name = author,
-                 options = [{attrs, [not_null]}]},
-    #association{schema = category, type = belongs_to, name = category}
+    #association{type = has_many, name = comments,
+                 options = #{schema => comment}},
+    #association{type = belongs_to, name = author,
+                 options = #{schema => author, attrs => [not_null]}},
+    #association{type = belongs_to, name = category,
+                 options = #{schema => category}}
   ].
 
 mock_article_schema(Schema) ->

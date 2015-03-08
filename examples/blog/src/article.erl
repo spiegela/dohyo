@@ -39,9 +39,9 @@ schema() ->
     dohyo:field(content, text, [not_null]),
 
     % Associations
-    dohyo:has_many(comments, [{schema, comment}]),
-    dohyo:belongs_to(author, [{attrs, [not_null]}]),
-    dohyo:has_many(commenters, [{schema, author},{through, comments}]),
+    dohyo:has_many(comments, #{schema => comment}),
+    dohyo:belongs_to(author, #{attrs =>[not_null]}),
+    dohyo:has_many(commenters, #{schema => author, through => comments}),
 
     % Validations
     dohyo:validate(presence, author_id),

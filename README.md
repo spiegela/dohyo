@@ -167,8 +167,8 @@ schema() ->
 
     % Define model associations -- note, no need to specify the "author_id."
     % field, as this is done by dohyo
-    dohyo:has_many(comments, [{schema, comment}]),
-    dohyo:belongs_to(author, [{attrs, [not_null]}]),
+    dohyo:has_many(comments, #{schema => comment}),
+    dohyo:belongs_to(author, #{attrs => [not_null]}),
 
     % Define some field validations to keep the model clean. Attempting to
     % Persist an entity with failures here will precipitate a validation

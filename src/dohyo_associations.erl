@@ -107,7 +107,7 @@ schema(belongs_to, Name, #{polymorphic := true}, Plist) ->
 schema(_Type, Name, _Opts, _Plist) ->
   Name.
 
--spec foreign_key(module(), module(), association_opts()) -> atom().
+-spec foreign_key(association_type(), module(), association_opts()) -> atom().
 foreign_key(_Type, _Module, #{foreign_key := FKey}) ->
   FKey;
 foreign_key(belongs_to, Module, _Opts) ->

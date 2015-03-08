@@ -36,10 +36,7 @@
 %%% Unit Test Descriptions
 
 unit_test_() ->
-  [ % { "association key translate correctly",
-    %   association_keys()
-    % },
-    { "Article with comments fetches empty list",
+  [ { "Article with comments fetches empty list",
       { setup,
         fun() -> 
           meck:expect(sumo_internal, id_field_name, ['_'], id),
@@ -161,6 +158,9 @@ unit_test_() ->
         fun page_has_many_tags_as_taggable/0
       }
     },
+    { "Polymorphic schema with missing type errors",
+      fun missing_poly_type_badarg/0
+    },
     { "Errors on unknown association lookup",
       { setup,
         fun() ->
@@ -168,7 +168,7 @@ unit_test_() ->
           meck:expect(login, schema, [], login_schema())
         end,
         fun(_) -> meck:unload(login) end,
-        association_lookup_badarg()
+        fun association_lookup_badarg/0
       }
     }
   ].
@@ -211,60 +211,16 @@ tag_belongs_to_taggable_page() ->
   Result = dohyo_associations:fetch(tag, belongs_to_taggable(), tag_1()),
   ?_assertEqual(page_1(), Result).
 
+missing_poly_type_badarg() ->
+  ?_assertError(badarg, dohyo_associations:fetch(tag, whales)).
+
 association_lookup_badarg() ->
-  ?_assertError(badarg, dohyo_associations:lookup(login, whales)).
-
-% association_keys() ->
-%  [ ?_assertEqual(
-%      dohyo_associations:key(local_key, article, belongs_to_author()),
-%      author_id
-%    ),
-%    ?_assertEqual(
-%      dohyo_associations:key(foreign_key, article, belongs_to_author()),
-%      id
-%    ),
-%    ?_assertEqual(
-%      dohyo_associations:key(local_key, article, has_many_comments()),
-%      id
-%    ),
-%    ?_assertEqual(
-%      dohyo_associations:key(foreign_key, article, has_many_comments()),
-%      article_id
-%    ),
-%    ?_assertEqual(
-%      dohyo_associations:key(local_key, article, belongs_to_user_as_author()),
-%      author_id
-%    ),
-%    ?_assertEqual(
-%      dohyo_associations:key(foreign_key, article, belongs_to_user_as_author()),
-%      user_id
-%    ),
-%    ?_assertEqual(
-%      dohyo_associations:key(local_key, article, has_many_as_special()),
-%      id
-%    ),
-%    ?_assertEqual(
-%      dohyo_associations:key(foreign_key, article, has_many_as_special()),
-%      special_id
-%    ),
-%    ?_assertEqual(
-%      dohyo_associations:key(local_key, article, belongs_to_as_special()),
-%      special_id
-%    ),
-%    ?_assertEqual(
-%      dohyo_associations:key(foreign_key, article, belongs_to_as_special()),
-%      id
-%    ),
-%    ?_assertEqual(
-%      dohyo_associations:key(local_key, article, has_many_comments_as_another()),
-%      another_id
-%    ),
-%    ?_assertEqual(
-%      dohyo_associations:key(foreign_key, article, has_many_comments_as_another()),
-%      article_id
-%    )
-%   ].
-
+  ?_assertError( badarg,
+                 dohyo_associations:fetch( tag,
+                                           belongs_to_taggable(),
+                                           invalid_tag_4()
+                                         )
+               ).
 
 %%% Fixtures
 
@@ -303,6 +259,8 @@ tag_3() -> [ {id, 3},
              {taggable_id, 1},
              {name, "Programming"}
            ].
+
+invalid_tag_4() -> [ {id, 4}, {taggable_id, 3}, {name, "Test"} ].
 
 belongs_to_author() ->
   #association{type = belongs_to, name = author}.

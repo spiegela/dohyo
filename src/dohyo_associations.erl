@@ -101,8 +101,8 @@ schema(_Type, _Name, #{schema := Schema}, _Plist) ->
   Schema;
 schema(belongs_to, Name, #{polymorphic := true}, Plist) ->
   case lists:keyfind(append_to_atom("_type", Name), 1, Plist) of
-    false -> error(badarg);
-    {_, Schema} -> Schema
+    false       -> error(badarg);
+    {_, Schema} -> list_to_atom(Schema)
   end;
 schema(_Type, Name, _Opts, _Plist) ->
   Name.

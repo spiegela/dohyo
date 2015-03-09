@@ -142,6 +142,13 @@ unit_test_() ->
         fun unload_person_mock/1,
         fun passed_person/0
       }
+    },
+    { "failed length with range throws on run",
+      { setup,
+        fun() -> mock_person_schema(valid_length_range()) end,
+        fun unload_person_mock/1,
+        fun failed_length_throws/0
+      }
     }
   ].
 

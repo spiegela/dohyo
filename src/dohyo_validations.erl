@@ -137,10 +137,13 @@ format3(Field, nomatch) -> {true, {Field, bad_format}};
 format3(_Field, {match, _Match}) -> false.
 
 %% @private
--spec length2(field_name(), false | {field_name(), term()}, pos_integer()) ->
+-spec length2(field_name(), false | {field_name(), term()}, length_arg()) ->
   false | {true, {field_name(), bad_length}}.
 length2(_Field, false, _Length) ->
   false;
+length2(Field, {Field, Value}, {Min, Max}) ->
+  Length = length(Value),
+  length3(Field, Length >= Min andalso Length =< Max);
 length2(Field, {Field, Value}, Length) ->
   length3(Field, length(Value) =:= Length).
 

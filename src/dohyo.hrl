@@ -46,6 +46,7 @@
                       field :: field_name(),
                       args  :: validation_args() }).
 -type validation() :: #validation{}.
+-type length_arg() :: pos_integer()| {non_neg_integer(), pos_integer()}.
 
 -type association_type() :: belongs_to | has_many.
 -type association_name() :: atom().

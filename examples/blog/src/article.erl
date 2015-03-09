@@ -44,9 +44,9 @@ schema() ->
     dohyo:has_many(commenters, #{schema => author, through => comments}),
 
     % Validations
-    dohyo:validate(presence, author_id),
-    dohyo:validate(presence, content),
-    dohyo:validate(uniqueness, title, ?MODULE),
+    dohyo:validate(author_id, presence),
+    dohyo:validate(content, presence),
+    dohyo:validate(title, uniqueness, ?MODULE),
 
     % Modifiers
     dohyo:before_validate(fun assign_author/2),

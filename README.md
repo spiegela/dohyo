@@ -59,28 +59,28 @@ types:
 * inclusion
 * exclusion
 * format
-* length
+* length (single number or range)
 
 ```erlang
 %% Check presence of fields
-dohyo:validate(presence, author)
+dohyo:validate(author, presence)
 
 %% Check that they're included in some list of good values
-dohyo:validate(inclusion, some_field, ["value1", "value2", "value3"])
+dohyo:validate(some_field, inclusion, ["value1", "value2", "value3"])
 
 %% or that they're excluded in some list of bad values
-dohyo:validate(exclusion, some_field, ["badvalue1", "badvalue2"])
+dohyo:validate(some_field, exclusion, ["badvalue1", "badvalue2"])
 
 %% Check them against a `re` compatible regex string.  (don't use that pattern
 %% for actual email checking)
-dohyo:validate(format, email, "\\w+@\\w+\[.\\w+]+")
+dohyo:validate(email, format, "\\w+@\\w+\[.\\w+]+")
 
 %% or that values are long enough
-dohyo:validate(length, email, 5)
+dohyo:validate(email, length, 5)
+dohyo:validate(email, length, {Min,Max})
 ```
 
 Important validations left add or improve:
-* length -- need to add maximum
 * uniqueness
 * by (use a generic validation function)
 
@@ -173,9 +173,9 @@ schema() ->
     % Define some field validations to keep the model clean. Attempting to
     % Persist an entity with failures here will precipitate a validation
     % error.
-    dohyo:validate(presence, author_id),
-    dohyo:validate(presence, content),
-    dohyo:validate(uniqueness, title, ?MODULE),
+    dohyo:validate(author_id, presence),
+    dohyo:validate(content, presence),
+    dohyo:validate(title, uniqueness, ?MODULE),
 
     % Define modifications that take place before a model is persisted or after
     % it is read.  These can be used to integrate application state

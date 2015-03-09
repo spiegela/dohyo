@@ -81,7 +81,7 @@ format(Plist, Field, Format) ->
 %% Tests proplist to see if field's value matches the provided length. Return
 %% type is compatible with lists:filtermap/2.
 %% @end
--spec length(proplists:proplist(), field_name(), pos_integer()) ->
+-spec length(proplists:proplist(), field_name(), length_arg()) ->
   false | {true, {field_name(), bad_length}}.
 length(Plist, Field, Length) ->
   length2(Field, lists:keyfind(Field, 1, Plist), Length).

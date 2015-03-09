@@ -194,14 +194,14 @@ belongs_to(Name) ->
 belongs_to(Name, Opts) ->
   #association{type = belongs_to, name = Name, options = Opts}.
 
-%% @equiv validate(Type, Name, []).
--spec validate(validation_type(), field_name()) -> validation().
-validate(Type, Field) -> #validation{type = Type, field = Field}.
+%% @equiv validate(Name, Type, []).
+-spec validate(field_name(), validation_type()) -> validation().
+validate(Field, Type) -> #validation{type = Type, field = Field}.
 
 %% @doc Returns a validation record to be used as part of a schema
--spec validate(validation_type(), field_name(), validation_args()) ->
+-spec validate(field_name(), validation_type(), validation_args()) ->
         validation().
-validate(Type, Field, Args) -> #validation{type = Type, field = Field,
+validate(Field, Type, Args) -> #validation{type = Type, field = Field,
                                            args = Args}.
 
 %% @doc

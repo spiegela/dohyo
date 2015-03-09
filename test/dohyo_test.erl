@@ -644,7 +644,7 @@ belongs_to_with_opts_returns_record() ->
 validate_returns_record() ->
   ?FORALL({Type, Field}, {validation_type(), field_name()},
           begin
-            dohyo:validate(Type, Field) =:=
+            dohyo:validate(Field, Type) =:=
               #validation{type = Type, field = Field}
           end).
 
@@ -652,7 +652,7 @@ validate_with_args_returns_record() ->
   ?FORALL({Type, Field, Args},
           {validation_type(), field_name(), validation_args()},
           begin
-            dohyo:validate(Type, Field, Args) =:=
+            dohyo:validate(Field, Type, Args) =:=
               #validation{type = Type, field = Field, args = Args}
           end).
 

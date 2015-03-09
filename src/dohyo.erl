@@ -9,10 +9,10 @@
 %%% Copyright (c) 2015 Aaron Spiegel
 %%% 
 %%% Permission is hereby granted, free of charge, to any person obtaining a copy
-%%% of this software and associated documentation files (the "Software"), to deal
-%%% in the Software without restriction, including without limitation the rights
-%%% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-%%% copies of the Software, and to permit persons to whom the Software is
+%%% of this software and associated documentation files (the "Software"), to
+%%% deal in the Software without restriction, including without limitation the
+%%% rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+%%% sell copies of the Software, and to permit persons to whom the Software is
 %%% furnished to do so, subject to the following conditions:
 %%% 
 %%% The above copyright notice and this permission notice shall be included in
@@ -22,9 +22,9 @@
 %%% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 %%% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 %%% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-%%% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-%%% THE SOFTWARE.
+%%% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+%%% FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+%%% IN THE SOFTWARE.
 
 -module(dohyo).
 
@@ -125,7 +125,7 @@ find_all(Module, State) ->
 %% the after_read modifier.
 %% @end
 -spec find_all(sumo:schema_name(), sumo:sort(), non_neg_integer(),
-               non_neg_integer() ,term()) ->
+               non_neg_integer(), term()) ->
   [sumo:user_doc()].
 find_all(Module, Sort, Limit, Offset, State) ->
   [ dohyo_modifiers:after_read(Module, Plist, State) ||
@@ -162,29 +162,27 @@ find_by(Module, Conditions, Sort, Limit, Offset, State) ->
   ].
 
 %% @equiv field(Name, Type, []).
--spec field(field_name(), field_type()) -> #field{}.
+-spec field(field_name(), field_type()) -> field().
 field(Name, Type) -> #field{name = Name, type = Type}.
 
 %% @doc Returns a field record to be used as part of a schema
--spec field(field_name(), field_type(), field_attrs()) -> #field{}.
+-spec field(field_name(), field_type(), field_attrs()) -> field().
 field(Name, Type, Attrs) -> #field{name = Name, type = Type, attrs = Attrs}.
 
 %% @equiv has_many(Name, []).
--spec has_many(association_name()) -> #association{}.
+-spec has_many(association_name()) -> association().
 has_many(Name) -> #association{type = has_many, name = Name}.
 
 %% @doc
 %% Returns an association record of type has_many to be used as part of a
 %% schema
 %% @end
--spec has_many(association_name(), association_opts()) ->
-  #association{type :: has_many, options :: association_opts()}.
+-spec has_many(association_name(), association_opts()) -> association().
 has_many(Name, Opts) ->
   #association{type = has_many, name = Name, options = Opts}.
 
 %% @equiv belongs_to(Name, []).
--spec belongs_to(association_name()) ->
-  #association{type :: belongs_to, options :: association_opts()}.
+-spec belongs_to(association_name()) -> association().
 belongs_to(Name) ->
   #association{type = belongs_to, name = Name}.
 
@@ -192,18 +190,17 @@ belongs_to(Name) ->
 %% Returns an association record of type belongs_to to be used as part of a
 %% schema
 %% @end
--spec belongs_to(association_name(), association_opts()) ->
-  #association{type :: belongs_to, options :: association_opts()}.
+-spec belongs_to(association_name(), association_opts()) -> association().
 belongs_to(Name, Opts) ->
   #association{type = belongs_to, name = Name, options = Opts}.
 
 %% @equiv validate(Type, Name, []).
--spec validate(validation_type(), field_name()) -> #validation{}.
+-spec validate(validation_type(), field_name()) -> validation().
 validate(Type, Field) -> #validation{type = Type, field = Field}.
 
 %% @doc Returns a validation record to be used as part of a schema
 -spec validate(validation_type(), field_name(), validation_args()) ->
-        #validation{}.
+        validation().
 validate(Type, Field, Args) -> #validation{type = Type, field = Field,
                                            args = Args}.
 
@@ -211,77 +208,77 @@ validate(Type, Field, Args) -> #validation{type = Type, field = Field,
 %% Returns a modifier record of type before_validate to be used a part of a
 %% schema
 %% @end
--spec before_validate(modifier_fun()) -> #modifier{}.
+-spec before_validate(modifier_fun()) -> modifier().
 before_validate(Fun) -> #modifier{type = before_validate, func = Fun}.
 
 %% @doc
 %% Returns a modifier record of type after_validate to be used a part of a
 %% schema
 %% @end
--spec after_validate(modifier_fun()) -> #modifier{}.
+-spec after_validate(modifier_fun()) -> modifier().
 after_validate(Fun) -> #modifier{type = after_validate, func = Fun}.
 
 %% @doc
 %% Returns a modifier record of type before_commit to be used a part of a
 %% schema
 %% @end
--spec before_commit(modifier_fun()) -> #modifier{}.
+-spec before_commit(modifier_fun()) -> modifier().
 before_commit(Fun) -> #modifier{type = before_commit, func = Fun}.
 
 %% @doc
 %% Returns a modifier record of type before_delete to be used a part of a
 %% schema
 %% @end
--spec before_delete(modifier_fun()) -> #modifier{}.
+-spec before_delete(modifier_fun()) -> modifier().
 before_delete(Fun) -> #modifier{type = before_delete, func = Fun}.
 
 %% @doc
 %% Returns a modifier record of type before_delete_by to be used a part of a
 %% schema
 %% @end
--spec before_delete_by(modifier_fun()) -> #modifier{}.
+-spec before_delete_by(modifier_fun()) -> modifier().
 before_delete_by(Fun) -> #modifier{type = before_delete_by, func = Fun}.
 
 %% @doc
 %% Returns a modifier record of type after_read to be used a part of a
 %% schema
 %% @end
--spec after_read(modifier_fun()) -> #modifier{}.
+-spec after_read(modifier_fun()) -> modifier().
 after_read(Fun) -> #modifier{type = after_read, func = Fun}.
 
 %% @doc
 %% Returns a hook record of type on_create to be used a part of a
 %% schema
 %% @end
--spec on_create(hook_fun()) -> #hook{}.
+-spec on_create(hook_fun()) -> hook().
 on_create(Fun) -> #hook{type = on_create, func = Fun}.
 
 %% @doc
 %% Returns a hook record of type on_update to be used a part of a
 %% schema
 %% @end
--spec on_update(hook_fun()) -> #hook{}.
+-spec on_update(hook_fun()) -> hook().
 on_update(Fun) -> #hook{type = on_update, func = Fun}.
 
 %% @doc
 %% Returns a hook record of type on_delete to be used a part of a
 %% schema
 %% @end
--spec on_delete(hook_fun()) -> #hook{}.
+-spec on_delete(hook_fun()) -> hook().
 on_delete(Fun) -> #hook{type = on_delete, func = Fun}.
 
 %% @doc
 %% Returns a hook record of type on_delete_all to be used a part of a
 %% schema
 %% @end
--spec on_delete_all(hook_fun()) -> #hook{}.
+-spec on_delete_all(hook_fun()) -> hook().
 on_delete_all(Fun) -> #hook{type = on_delete_all, func = Fun}.
 
 %% @doc
 %% Returns a hook record of type on_schema_create to be used a part of a
 %% schema
 %% @end
--spec on_schema_create(hook_fun()) -> #hook{}.
+-spec on_schema_create(hook_fun()) -> hook().
 on_schema_create(Fun) -> #hook{type = on_schema_create, func = Fun}.
 
 %% @doc
@@ -384,7 +381,7 @@ all_association_ids(Module, Plist) ->
 
 %% @private
 -spec store_association(
-        #association{},
+        association(),
         {sumo:schema_name(), sumo:user_doc()}
        ) ->
   sumo:user_doc().
@@ -397,7 +394,7 @@ store_association(#association{name = Name}=Assoc, {Module, Plist}) ->
 
 %% @private
 -spec store_ids(
-        #association{},
+        association(),
         {sumo:schema_name(), sumo:user_doc()}
        ) ->
   sumo:user_doc().

@@ -7,10 +7,10 @@
 %%% Copyright (c) 2015 Aaron Spiegel
 %%% 
 %%% Permission is hereby granted, free of charge, to any person obtaining a copy
-%%% of this software and associated documentation files (the "Software"), to deal
-%%% in the Software without restriction, including without limitation the rights
-%%% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-%%% copies of the Software, and to permit persons to whom the Software is
+%%% of this software and associated documentation files (the "Software"), to
+%%% deal in the Software without restriction, including without limitation the
+%%% rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+%%% sell copies of the Software, and to permit persons to whom the Software is
 %%% furnished to do so, subject to the following conditions:
 %%% 
 %%% The above copyright notice and this permission notice shall be included in
@@ -20,9 +20,9 @@
 %%% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 %%% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 %%% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-%%% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-%%% THE SOFTWARE.
+%%% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+%%% FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+%%% IN THE SOFTWARE.
 
 -module(dohyo_test).
 
@@ -300,7 +300,7 @@ wrap_sumo_find_one() ->
 
 wrap_sumo_find_all_2() ->
   State = [],
-  Plists = [login(),login(),login()],
+  Plists = [login(), login(), login()],
   Plists = dohyo:find_all(login, State),
   [ ?assert(meck:validate(login)),
     ?assertEqual(3, meck:num_calls(login, schema, [])),
@@ -312,7 +312,7 @@ wrap_sumo_find_all_2() ->
 
 wrap_sumo_find_all_4() ->
   State = [],
-  Plists = [login(),login(),login()],
+  Plists = [login(), login(), login()],
   Plists = dohyo:find_all(login, username, 10, 10, State),
   [ ?assert(meck:validate(login)),
     ?assertEqual(3, meck:num_calls(login, schema, [])),
@@ -325,7 +325,7 @@ wrap_sumo_find_all_4() ->
 wrap_sumo_find_by_2() ->
   State = [],
   Conditions = [{username, "spiegela"}],
-  Plists = [login(),login(),login()],
+  Plists = [login(), login(), login()],
   Plists = dohyo:find_by(login, Conditions, State),
   [ ?assert(meck:validate(login)),
     ?assertEqual(3, meck:num_calls(login, schema, [])),
@@ -338,7 +338,7 @@ wrap_sumo_find_by_2() ->
 wrap_sumo_find_by_4() ->
   State = [],
   Conditions = [{username, "spiegela"}],
-  Plists = [login(),login(),login()],
+  Plists = [login(), login(), login()],
   Plists = dohyo:find_by(login, Conditions, 10, 10, State),
   [ ?assert(meck:validate(login)),
     ?assertEqual(3, meck:num_calls(login, schema, [])),
@@ -351,12 +351,17 @@ wrap_sumo_find_by_4() ->
 wrap_sumo_find_by_5() ->
   State = [],
   Conditions = [{username, "spiegela"}],
-  Plists0 = [login(),login(),login()],
+  Plists0 = [login(), login(), login()],
   Plists1 = dohyo:find_by(login, Conditions, username, 10, 10, State),
   [ ?assert(meck:validate(login)),
     ?assertEqual(3, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
-    ?assertEqual(1, meck:num_calls(sumo, find_by, [login, Conditions, username, 10, 10])),
+    ?assertEqual( 1,
+                  meck:num_calls( sumo,
+                                  find_by,
+                                  [login, Conditions, username, 10, 10]
+                                )
+                ),
     ?assert(meck:validate(fakemod)),
     ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []])),
     ?assertEqual(Plists0, Plists1)
@@ -392,7 +397,7 @@ fetches_has_many_ids() ->
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
-    ?assertEqual({roles, [1,2,3]}, RolesIds)
+    ?assertEqual({roles, [1, 2, 3]}, RolesIds)
   ].
 
 fetches_belongs_to_ids() ->
@@ -414,7 +419,7 @@ fetches_all_associations() ->
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
     ?assertEqual(1, meck:num_calls(sumo, find_one, [account, AcctConditions])),
-    ?assertEqual([{roles, roles()},{account,account()}], Assocs)
+    ?assertEqual([{roles, roles()}, {account, account()}], Assocs)
   ].
 
 fetches_all_association_ids() ->
@@ -425,7 +430,7 @@ fetches_all_association_ids() ->
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
-    ?assertEqual([{roles, [1,2,3]},{account,12}], AssocIds)
+    ?assertEqual([{roles, [1, 2, 3]}, {account, 12}], AssocIds)
   ].
 
 embeds_has_many_association() ->
@@ -449,7 +454,7 @@ embeds_belongs_to_association() ->
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_one, [account, Conditions])),
-    ?assertEqual(Login ++ [{account,Account}], Login2)
+    ?assertEqual(Login ++ [{account, Account}], Login2)
   ].
 
 embeds_has_many_ids() ->
@@ -460,7 +465,7 @@ embeds_has_many_ids() ->
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_by, [role, Conditions])),
-    ?assertEqual(Login ++ [{roles,[1,2,3]}], Login2)
+    ?assertEqual(Login ++ [{roles, [1, 2, 3]}], Login2)
   ].
 
 embeds_belongs_to_ids() ->
@@ -469,7 +474,7 @@ embeds_belongs_to_ids() ->
   [ ?assert(meck:validate(login)),
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
-    ?assertEqual(Login ++ [{account,12}], Login2)
+    ?assertEqual(Login ++ [{account, 12}], Login2)
   ].
 
 embeds_all_associations() ->
@@ -482,7 +487,7 @@ embeds_all_associations() ->
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
     ?assertEqual(1, meck:num_calls(sumo, find_one, [account, AcctConditions])),
-    ?assertEqual(Login ++ [{roles, roles()},{account,account()}], Login2)
+    ?assertEqual(Login ++ [{roles, roles()}, {account, account()}], Login2)
   ].
 
 embeds_all_association_ids() ->
@@ -493,7 +498,7 @@ embeds_all_association_ids() ->
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_by, [role, RoleConditions])),
-    ?assertEqual(Login ++ [{roles, [1,2,3]},{account,12}], Login2)
+    ?assertEqual(Login ++ [{roles, [1, 2, 3]}, {account, 12}], Login2)
   ].
 
 %%% Setup Functions
@@ -517,17 +522,25 @@ setup_mocks() ->
   meck:expect(sumo, delete_all, [login], 22),
   meck:expect(sumo, find, [login, 5], Plist),
   meck:expect(sumo, find_one, [login, Conditions], Plist),
-  meck:expect(sumo, find_all, [login], [Plist,Plist,Plist]),
-  meck:expect(sumo, find_all, [login, username, 10, 10], [Plist,Plist,Plist]),
-  meck:expect(sumo, find_by, [login, Conditions], [Plist,Plist,Plist]),
-  meck:expect(sumo, find_by, [login, Conditions, 10, 10], [Plist,Plist,Plist]),
-  meck:expect(sumo, find_by, [login, Conditions, username, 10, 10], [Plist,Plist,Plist]).  
+  meck:expect(sumo, find_all, [login], [Plist, Plist, Plist]),
+  meck:expect(sumo, find_all, [login, username, 10, 10], [Plist, Plist, Plist]),
+  meck:expect(sumo, find_by, [login, Conditions], [Plist, Plist, Plist]),
+  meck:expect( sumo,
+               find_by,
+               [login, Conditions, 10, 10],
+               [Plist, Plist, Plist]
+             ),
+  meck:expect( sumo,
+               find_by,
+               [login, Conditions, username, 10, 10],
+               [Plist, Plist, Plist]
+             ).  
 
 setup_assoc_mocks() ->
   meck:new(login, [non_strict]),
   meck:expect(login, schema, [], login_schema()),
-  meck:expect(sumo, find_one, [account, [{id,12}]], account()),
-  meck:expect(sumo, find_by, [role, [{login_id,5}]], roles()),
+  meck:expect(sumo, find_one, [account, [{id, 12}]], account()),
+  meck:expect(sumo, find_by, [role, [{login_id, 5}]], roles()),
   meck:expect(sumo_internal, id_field_name, ['_'], id).
 
 unload_mocks(_) ->

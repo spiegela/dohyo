@@ -7,10 +7,10 @@
 %%% Copyright (c) 2015 Aaron Spiegel
 %%% 
 %%% Permission is hereby granted, free of charge, to any person obtaining a copy
-%%% of this software and associated documentation files (the "Software"), to deal
-%%% in the Software without restriction, including without limitation the rights
-%%% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-%%% copies of the Software, and to permit persons to whom the Software is
+%%% of this software and associated documentation files (the "Software"), to
+%%% deal in the Software without restriction, including without limitation the
+%%% rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+%%% sell copies of the Software, and to permit persons to whom the Software is
 %%% furnished to do so, subject to the following conditions:
 %%% 
 %%% The above copyright notice and this permission notice shall be included in
@@ -20,9 +20,9 @@
 %%% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 %%% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 %%% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-%%% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-%%% THE SOFTWARE.
+%%% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+%%% FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+%%% IN THE SOFTWARE.
 
 -module(dohyo_associations).
 
@@ -30,24 +30,22 @@
 
 -export[fetch/3, fetch_ids/3, lookup/1, lookup/2, local_key/4].
 
--spec lookup(sumo:schema_name()) -> [#association{}].
+-spec lookup(sumo:schema_name()) -> [association()].
 lookup(Module) ->
-  Fun = fun(#association{}) -> true; (_Entity) -> false end,
-  lists:filter(Fun, Module:schema()).
+  lists:filter(fun lookup_filter/1, Module:schema()).
 
-%% @private
 -spec lookup(sumo:schema_name(), association_name()) ->
-  #association{}.
+  association().
 lookup(Module, Name1) ->
   Fun = fun(#association{name = Name}) when Name =:= Name1 -> false;
-           (_Entity) -> true
-        end,
+    (_Entity) -> true
+  end,
   case lists:dropwhile(Fun, Module:schema()) of
     []     -> error(badarg);
     [X|_T] -> X
   end.
 
--spec fetch_ids(module(), #association{}, proplists:proplist()) ->
+-spec fetch_ids(module(), association(), proplists:proplist()) ->
   [string() | pos_integer()] | undefined.
 fetch_ids(Module,
           #association{type = has_many, name = Name, options = Opts}=Assoc,
@@ -64,7 +62,7 @@ fetch_ids( Module,
 
 -spec fetch(
         module(),
-        #association{},
+        association(),
         proplists:proplist()
        ) -> proplists:proplist().
 fetch(Module, #association{type = has_many, options = Opts}=Assoc, Plist) ->
@@ -77,7 +75,7 @@ fetch(Module, #association{type = belongs_to}=Assoc, Plist) ->
 -spec query_params(
         association_type(),
         module(),
-        #association{},
+        association(),
         proplists:proplist()
        ) -> {atom(), atom(), term()}.
 query_params(Type, Module, #association{name = Name, options = Opts}, Plist) ->
@@ -152,3 +150,8 @@ select_ids(Module, Entities) ->
           {_, ID} = lists:keyfind(IDField, 1, Entity), ID
         end,
   lists:map(Fun, Entities).
+
+%% @private
+-spec lookup_filter(schema_entry()) -> boolean().
+lookup_filter(#association{}) -> true;
+lookup_filter(_Entity) -> false.

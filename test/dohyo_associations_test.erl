@@ -7,10 +7,10 @@
 %%% Copyright (c) 2015 Aaron Spiegel
 %%% 
 %%% Permission is hereby granted, free of charge, to any person obtaining a copy
-%%% of this software and associated documentation files (the "Software"), to deal
-%%% in the Software without restriction, including without limitation the rights
-%%% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-%%% copies of the Software, and to permit persons to whom the Software is
+%%% of this software and associated documentation files (the "Software"), to
+%%% deal in the Software without restriction, including without limitation the
+%%% rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+%%% sell copies of the Software, and to permit persons to whom the Software is
 %%% furnished to do so, subject to the following conditions:
 %%% 
 %%% The above copyright notice and this permission notice shall be included in
@@ -20,9 +20,9 @@
 %%% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 %%% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 %%% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-%%% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-%%% THE SOFTWARE.
+%%% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+%%% FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+%%% IN THE SOFTWARE.
 
 -module(dohyo_associations_test).
 
@@ -191,7 +191,7 @@ unit_test_() ->
           meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:expect(sumo,
                       find_by,
-                      [tag, [{taggable_id, 1},{taggable_type, page}]],
+                      [tag, [{taggable_id, 1}, {taggable_type, page}]],
                       [tag_1(), tag_3()]
                      )
         end,
@@ -233,15 +233,24 @@ article_local_key_belongs_to_author() ->
   ?_assertEqual(author_2(), Result).
 
 article_has_no_comment_ids() ->
-  Result = dohyo_associations:fetch_ids(article, has_many_comments(), article_3()),
+  Result = dohyo_associations:fetch_ids( article,
+                                         has_many_comments(),
+                                         article_3()
+                                       ),
   ?_assertEqual([], Result).
 
 article_has_comment_ids() ->
-  Result = dohyo_associations:fetch_ids(article, has_many_comments(), article_3()),
-  ?_assertEqual([3,4,5], Result).
+  Result = dohyo_associations:fetch_ids( article,
+                                         has_many_comments(),
+                                         article_3()
+                                       ),
+  ?_assertEqual([3, 4, 5], Result).
 
 article_belongs_to_author_id() ->
-  Result = dohyo_associations:fetch_ids(article, belongs_to_author(), article_3()),
+  Result = dohyo_associations:fetch_ids( article,
+                                         belongs_to_author(),
+                                         article_3()
+                                       ),
   ?_assertEqual(2, Result).
 
 page_has_many_tags_as_taggable() ->

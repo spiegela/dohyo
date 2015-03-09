@@ -171,45 +171,31 @@ field(Name, Type, Attrs) -> #field{name = Name, type = Type, attrs = Attrs}.
 
 %% @equiv has_many(Name, []).
 -spec has_many(association_name()) -> #association{}.
-has_many(Name) -> #association{schema = Name, type = has_many, name = Name}.
+has_many(Name) -> #association{type = has_many, name = Name}.
 
 %% @doc
 %% Returns an association record of type has_many to be used as part of a
 %% schema
 %% @end
--spec has_many(association_name(), proplists:proplist()) ->
-  #association{type :: has_many, options :: proplists:proplist()}.
+-spec has_many(association_name(), association_opts()) ->
+  #association{type :: has_many, options :: association_opts()}.
 has_many(Name, Opts) ->
-  case lists:keytake(schema, 1, Opts) of
-    {value, {_, Module}, Opts1} ->
-      #association{type = has_many, name = Name, schema = Module,
-                   options = Opts1};
-    false ->
-      #association{type = has_many, name = Name, schema = Name,
-                   options = Opts}
-  end.
+  #association{type = has_many, name = Name, options = Opts}.
 
 %% @equiv belongs_to(Name, []).
 -spec belongs_to(association_name()) ->
-  #association{type :: belongs_to, options :: proplists:proplist()}.
-belongs_to(Name) -> #association{schema = Name, type = belongs_to,
-                                 name = Name}.
+  #association{type :: belongs_to, options :: association_opts()}.
+belongs_to(Name) ->
+  #association{type = belongs_to, name = Name}.
 
 %% @doc
 %% Returns an association record of type belongs_to to be used as part of a
 %% schema
 %% @end
--spec belongs_to(association_name(), proplists:proplist()) ->
-  #association{type :: belongs_to, options :: proplists:proplist()}.
+-spec belongs_to(association_name(), association_opts()) ->
+  #association{type :: belongs_to, options :: association_opts()}.
 belongs_to(Name, Opts) ->
-  case lists:keytake(schema, 1, Opts) of
-    {value, {_, Module}, Opts1} ->
-      #association{type = belongs_to, name = Name, schema = Module,
-                   options = Opts1};
-    false ->
-      #association{type = belongs_to, name = Name, schema = Name,
-                   options = Opts}
-  end.
+  #association{type = belongs_to, name = Name, options = Opts}.
 
 %% @equiv validate(Type, Name, []).
 -spec validate(validation_type(), field_name()) -> #validation{}.

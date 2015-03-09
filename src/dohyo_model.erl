@@ -50,16 +50,15 @@ sumo_fields(Schema) -> lists:filtermap(fun sumo_field/1, Schema).
 -spec sumo_field(schema_entry()) -> {true, sumo:field()} | false.
 sumo_field(#field{name = Name, type = Type, attrs = Attrs}) ->
   {true, sumo:new_field(Name, Type, Attrs)};
-sumo_field(#association{type = belongs_to, options = Opts}=Assoc) ->
-  Name = dohyo_associations:key(local_key, undefind, Assoc),
-  {true, sumo:new_field(Name, integer, field_attrs(Opts))};
+sumo_field(#association{type = belongs_to, name = Name, options = Opts}) ->
+  Field = dohyo_associations:local_key(belongs_to, undefined, Name, Opts),
+  {true, sumo:new_field(Field, integer, field_attrs(Opts))};
 sumo_field(_Entry) ->
   false.
 
 %% @private
--spec field_attrs(proplists:proplist()) -> [atom()].
-field_attrs(Opts) ->
-  case lists:keyfind(attrs, 1, Opts) of
-    false      -> [];
-    {_, Attrs} -> Attrs
-  end.
+-spec field_attrs(association_opts()) -> [atom()].
+field_attrs(#{attrs := Attrs}) ->
+  Attrs;
+field_attrs(_Opts) ->
+  [].

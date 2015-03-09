@@ -26,8 +26,6 @@
 
 -module(dohyo_test).
 
--compile(export_all).
-
 -include_lib("proper/include/proper.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
@@ -207,10 +205,8 @@ property_test_() ->
   [ ?_assertEqual(true, ?_proper_passes(field_returns_record())),
     ?_assertEqual(true, ?_proper_passes(field_with_args_returns_record())),
     ?_assertEqual(true, ?_proper_passes(has_many_returns_record())),
-    ?_assertEqual(true, ?_proper_passes(has_many_w_schema_returns_record())),
     ?_assertEqual(true, ?_proper_passes(has_many_with_opts_returns_record())),
     ?_assertEqual(true, ?_proper_passes(belongs_to_returns_record())),
-    ?_assertEqual(true, ?_proper_passes(belongs_to_w_schema_returns_record())),
     ?_assertEqual(true, ?_proper_passes(belongs_to_with_opts_returns_record())),
     ?_assertEqual(true, ?_proper_passes(validate_returns_record())),
     ?_assertEqual(true, ?_proper_passes(validate_with_args_returns_record())),
@@ -532,16 +528,17 @@ setup_assoc_mocks() ->
   meck:expect(login, schema, [], login_schema()),
   meck:expect(sumo, find_one, [account, [{id,12}]], account()),
   meck:expect(sumo, find_by, [role, [{login_id,5}]], roles()),
-  meck:expect(sumo_internal, id_field_name, [role], id).
-
-unload_assoc_mocks(_) ->
-  meck:unload(login),
-  meck:unload(sumo).
+  meck:expect(sumo_internal, id_field_name, ['_'], id).
 
 unload_mocks(_) ->
   meck:unload(login),
   meck:unload(fakemod),
   meck:unload(sumo).
+
+unload_assoc_mocks(_) ->
+  meck:unload(login),
+  meck:unload(sumo),
+  meck:unload(sumo_internal).
 
 %%% Fixtures
 
@@ -549,8 +546,8 @@ login_schema() ->
   [ #field{name = username, type = string},
     #field{name = password, type = string},
     #field{name = password_confirm, type = string},
-    #association{type = has_many, name = roles, schema = role},
-    #association{type = belongs_to, name = account, schema = account},
+    #association{type = has_many, name = roles, options = #{schema => role}},
+    #association{type = belongs_to, name = account},
     #modifier{type = before_validate, func = fun fakemod:before_validate/2},
     #modifier{type = after_validate, func = fun fakemod:after_validate/2},
     #modifier{type = before_commit, func = fun fakemod:before_commit/2},
@@ -605,45 +602,30 @@ field_with_args_returns_record() ->
 has_many_returns_record() ->
   ?FORALL(Name, association_name(),
           begin
+            meck:expect(sumo_internal, id_field_name, [Name], id),
             dohyo:has_many(Name) =:=
-              #association{type = has_many, name = Name, schema = Name}
-          end).
-
-has_many_w_schema_returns_record() ->
-  ?FORALL({Name, Schema}, {association_name(), atom()},
-          begin
-            dohyo:has_many(Name, [{schema, Schema}]) =:=
-              #association{type = has_many, name = Name, schema = Schema}
+              #association{ type = has_many, name = Name }
           end).
 
 has_many_with_opts_returns_record() ->
-  ?FORALL({Name, Opts}, {association_name(), proplists:proplist()},
+  ?FORALL({Name, Opts}, {association_name(), #{}},
           begin
             dohyo:has_many(Name, Opts) =:=
-              #association{type = has_many, name = Name, schema = Name,
-                           options = Opts}
+              #association{type = has_many, name = Name, options = Opts}
           end).
 
 belongs_to_returns_record() ->
   ?FORALL(Name, association_name(),
           begin
             dohyo:belongs_to(Name) =:=
-              #association{type = belongs_to, name = Name, schema = Name}
-          end).
-
-belongs_to_w_schema_returns_record() ->
-  ?FORALL({Name, Schema}, {association_name(), atom()},
-          begin
-            dohyo:belongs_to(Name, [{schema, Schema}]) =:=
-              #association{type = belongs_to, name = Name, schema = Schema}
+              #association{type = belongs_to, name = Name}
           end).
 
 belongs_to_with_opts_returns_record() ->
-  ?FORALL({Name, Opts}, {association_name(), proplists:proplist()},
+  ?FORALL({Name, Opts}, {association_name(), #{}},
           begin
             dohyo:belongs_to(Name, Opts) =:=
-              #association{type = belongs_to, name = Name, schema = Name,
-                           options = Opts}
+              #association{type = belongs_to, name = Name, options = Opts}
           end).
 
 validate_returns_record() ->

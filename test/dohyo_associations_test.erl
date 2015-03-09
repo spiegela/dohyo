@@ -36,7 +36,25 @@
 %%% Unit Test Descriptions
 
 unit_test_() ->
-  [ { "Article with comments fetches empty list",
+  [
+    { "Errors on unknown association lookup",
+      { setup,
+        fun() ->
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
+          meck:new(login, [non_strict]),
+          meck:expect(login, schema, [], login_schema())
+        end,
+        fun(_) ->
+          meck:unload(login),
+          meck:unload(sumo_internal)
+        end,
+        fun association_lookup_badarg/0
+      }
+    },
+    { "Polymorphic schema with missing type errors",
+      fun missing_poly_type_badarg/0
+    },
+    { "Article with no comments fetches empty list",
       { setup,
         fun() -> 
           meck:expect(sumo_internal, id_field_name, ['_'], id),
@@ -49,7 +67,7 @@ unit_test_() ->
         fun article_has_comments/0
       }
     },
-    { "Article with no comments fetches list",
+    { "Article with comments fetches list",
       { setup,
         fun() -> 
           meck:expect(sumo_internal, id_field_name, ['_'], id),
@@ -87,6 +105,32 @@ unit_test_() ->
             meck:unload(sumo)
         end,
         fun article_belongs_to_author/0
+      }
+    },
+    { "Article with author & alternate foreign_key fetches plist",
+      { setup,
+        fun() -> 
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
+          meck:expect(sumo, find_one, [author, [{alternate_id, 2}]], author_2())
+        end,
+        fun(_) ->
+            meck:unload(sumo_internal),
+            meck:unload(sumo)
+        end,
+        fun article_foreign_key_belongs_to_author/0
+      }
+    },
+    { "Article with author & alternate local_key fetches plist",
+      { setup,
+        fun() -> 
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
+          meck:expect(sumo, find_one, [author, [{id, 4}]], author_2())
+        end,
+        fun(_) ->
+            meck:unload(sumo_internal),
+            meck:unload(sumo)
+        end,
+        fun article_local_key_belongs_to_author/0
       }
     },
     { "Article with no comments fetches empty id list",
@@ -157,19 +201,6 @@ unit_test_() ->
         end,
         fun page_has_many_tags_as_taggable/0
       }
-    },
-    { "Polymorphic schema with missing type errors",
-      fun missing_poly_type_badarg/0
-    },
-    { "Errors on unknown association lookup",
-      { setup,
-        fun() ->
-          meck:new(login, [non_strict]),
-          meck:expect(login, schema, [], login_schema())
-        end,
-        fun(_) -> meck:unload(login) end,
-        fun association_lookup_badarg/0
-      }
     }
   ].
 
@@ -189,6 +220,16 @@ article_belongs_to_null_author() ->
 
 article_belongs_to_author() ->
   Result = dohyo_associations:fetch(article, belongs_to_author(), article_3()),
+  ?_assertEqual(author_2(), Result).
+
+article_foreign_key_belongs_to_author() ->
+  Result = dohyo_associations:fetch(article, foreign_key_belongs_to_author(),
+                                    article_3()),
+  ?_assertEqual(author_2(), Result).
+
+article_local_key_belongs_to_author() ->
+  Result = dohyo_associations:fetch(article, local_key_belongs_to_author(),
+                                    article_3()),
   ?_assertEqual(author_2(), Result).
 
 article_has_no_comment_ids() ->
@@ -211,22 +252,21 @@ tag_belongs_to_taggable_page() ->
   Result = dohyo_associations:fetch(tag, belongs_to_taggable(), tag_1()),
   ?_assertEqual(page_1(), Result).
 
-missing_poly_type_badarg() ->
-  ?_assertError(badarg, dohyo_associations:fetch(tag, whales)).
-
 association_lookup_badarg() ->
-  ?_assertError( badarg,
-                 dohyo_associations:fetch( tag,
-                                           belongs_to_taggable(),
-                                           invalid_tag_4()
-                                         )
+  ?assertError(badarg, dohyo_associations:lookup(login, whale)).
+
+missing_poly_type_badarg() ->
+  ?assertError(badarg, dohyo_associations:fetch( tag,
+                                                  belongs_to_taggable(),
+                                                  invalid_tag_4()
+                                                )
                ).
 
 %%% Fixtures
 
 article_3() ->
   [ {id, 3}, {title, "My Third Article"}, {content, "Some good stuf here..."},
-    {author_id, 2}, {tag_id, 1} ].
+    {author_id, 2}, {tag_id, 1}, {alternate_id, 4} ].
 
 page_1() ->
   [ {id, 1}, {title, "About Me"}, {content, "Some good stuf here..."},
@@ -265,13 +305,17 @@ invalid_tag_4() -> [ {id, 4}, {taggable_id, 3}, {name, "Test"} ].
 belongs_to_author() ->
   #association{type = belongs_to, name = author}.
 
+foreign_key_belongs_to_author() ->
+  #association{type = belongs_to, name = author,
+               options = #{foreign_key => alternate_id}}.
+
+local_key_belongs_to_author() ->
+  #association{type = belongs_to, name = author,
+               options = #{local_key => alternate_id}}.
+
 has_many_comments() ->
   #association{type = has_many, name = comments,
                options = #{schema => comment}}.
-
-has_many_tags_as_article() ->
-  #association{type = has_many, name = tags,
-               options = #{schema => tag, as => taggable}}.
 
 has_many_tags_as_page() ->
   #association{type = has_many, name = tags,
@@ -281,21 +325,9 @@ belongs_to_taggable() ->
   #association{type = belongs_to, name = taggable,
                options = #{polymorphic => true}}.
 
-belongs_to_user_as_author() ->
-  #association{type = belongs_to, name = author,
-               options = #{schema => author, foreign_key => user_id}}.
-
 has_many_as_special() ->
   #association{type = has_many, name = comments,
                options = #{schema => comment, foreign_key => special_id}}.
-
-belongs_to_as_special() ->
-  #association{type = belongs_to, name = author,
-               options = #{schema => author, local_key => special_id}}.
-
-has_many_comments_as_another() ->
-  #association{type = has_many, name = comments,
-               options = #{schema => comment, local_key => another_id}}.
 
 article_schema() ->
   [ #field{name = id, type = integer, attrs = [not_null, autoincrement]},

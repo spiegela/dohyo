@@ -135,6 +135,13 @@ unit_test_() ->
         fun unload_person_mock/1,
         fun passed_person/0
       }
+    },
+    { "length passes with two arguments for min & max",
+      { setup,
+        fun() -> mock_person_schema(valid_length_range()) end,
+        fun unload_person_mock/1,
+        fun passed_person/0
+      }
     }
   ].
 
@@ -274,6 +281,11 @@ invalid_length() ->
 
 valid_length() ->
   [ #validation{type = length, field = pin, args = 4} |
+    person_schema()
+  ].
+
+valid_length_range() ->
+  [ #validation{type = length, field = pin, args = {4, 6}} |
     person_schema()
   ].
 

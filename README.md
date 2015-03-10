@@ -52,6 +52,7 @@ Local keys (in the case of `belongs_to` relationships need not be create with
 
 * `validate/2`
 * `validate/3`
+* `validate_by/1`
 
 These functions generate schema validation entris with the following valid
 types:
@@ -60,6 +61,7 @@ types:
 * exclusion
 * format
 * length (single number or range)
+* by (validate by an arbitrary function)
 
 ```erlang
 %% Check presence of fields
@@ -78,11 +80,16 @@ dohyo:validate(email, format, "\\w+@\\w+\[.\\w+]+")
 %% or that values are long enough
 dohyo:validate(email, length, 5)
 dohyo:validate(email, length, {Min,Max})
+
+%% or by any function (anonymous or named)
+dohyo:validate(password, by, fun complexity/1)
+
+%% or validate the document by a function
+dohyo:validate_by(fun password_and_confirm_match/1)
 ```
 
 Important validations left add or improve:
 * uniqueness
-* by (use a generic validation function)
 
 ### Entity modifier definition
 

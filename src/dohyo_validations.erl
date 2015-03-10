@@ -29,7 +29,7 @@
 %%%
 %%% Validators
 %%%
--export([presence/2, inclusion/3, exclusion/3, format/3, length/3]).
+-export([presence/2, inclusion/3, exclusion/3, format/3, length/3, by/3]).
 % -export([numericality/2, uniqueness/2, with/2]).
 
 %%%
@@ -85,6 +85,14 @@ format(Plist, Field, Format) ->
   false | {true, {field_name(), bad_length}}.
 length(Plist, Field, Length) ->
   length2(Field, lists:keyfind(Field, 1, Plist), Length).
+
+%% @doc
+%% Tests proplist field value against provided value. Return type is compatible
+%% with lists:filtermap/2.
+%% @end
+-spec by(proplists:proplist(), field_name(), field_validator_fun()) ->
+  false | {true, {field_name(), bad_length}}.
+by(Plist, Field, Fun) -> by2(Field, lists:keyfind(Field, 1, Plist), Fun).
 
 %%% Private Functions
 
@@ -153,12 +161,26 @@ length2(Field, {Field, Value}, Length) ->
 length3(_Field, true) -> false;
 length3(Field, false) -> {true, {Field, bad_length}}.
 
+%% @private
+-spec by2( field_name(),
+           false | {field_name(), term()}, field_validator_fun()
+         ) ->
+  false | {true, {field_name(), bad_length}}.
+by2(_Field, false, _Fun) ->
+  false;
+by2(Field, {Field, Value}, Fun) ->
+  case Fun(Value) of
+    false -> {true, {Field, bad_validate_by}};
+    true -> false
+  end.
+
 %% @doc
 %% Run a dohyo schema's validations against the provided property-list.  Errors
 %% will be first aggregated and then thrown if they exist.
 %% @throws {invalid_doc, [validation_error()]}
 %% @end
 -spec validate(sumo:schema_name(), proplists:proplist()) -> ok.
+
 validate(Module, Plist) ->
   Fun = fun(Validation) -> run_validation(Plist, Validation) end,
   case lists:filtermap(Fun, validations(Module:schema())) of
@@ -177,6 +199,8 @@ run_validation(_Plist, #validation{type = format, args = undefined}) ->
   error(badarg);
 run_validation(_Plist, #validation{type = length, args = undefined}) ->
   error(badarg);
+run_validation(_Plist, #validation{type = by, args = undefined}) ->
+  error(badarg);
 run_validation(Plist, #validation{type = presence, field = Field}) ->
   dohyo_validations:presence(Plist, Field);
 run_validation(Plist, #validation{type = inclusion, field = Field,
@@ -190,7 +214,13 @@ run_validation(Plist, #validation{type = format, field = Field,
   dohyo_validations:format(Plist, Field, Format);
 run_validation(Plist, #validation{type = length, field = Field,
                                   args = Length}) ->
-  dohyo_validations:length(Plist, Field, Length).
+  dohyo_validations:length(Plist, Field, Length);
+run_validation(Plist, #validation{type = by, field = undefined,
+                                  args = Fun}) ->
+  dohyo_validations:by(Plist, Fun);
+run_validation(Plist, #validation{type = by, field = Field,
+                                  args = Fun}) ->
+  dohyo_validations:by(Plist, Field, Fun).
 
 %% @private
 -spec validations(schema()) -> [validation()].

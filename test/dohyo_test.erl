@@ -220,7 +220,11 @@ property_test_() ->
     ?_assertEqual(true, ?_proper_passes(on_update_returns_record())),
     ?_assertEqual(true, ?_proper_passes(on_delete_returns_record())),
     ?_assertEqual(true, ?_proper_passes(on_delete_all_returns_record())),
-    ?_assertEqual(true, ?_proper_passes(on_schema_create_returns_record()))
+    ?_assertEqual(true, ?_proper_passes(on_schema_create_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(validate_by_fun_returns_record())),
+    ?_assertEqual( true,
+                   ?_proper_passes(validate_field_by_fun_returns_record())
+                 )
   ].
 
 %%% Unit Tests
@@ -654,6 +658,20 @@ validate_with_args_returns_record() ->
           begin
             dohyo:validate(Field, Type, Args) =:=
               #validation{type = Type, field = Field, args = Args}
+          end).
+
+validate_by_fun_returns_record() ->
+  ?FORALL(Fun, doc_validator_fun(),
+          begin
+            dohyo:validate_by(Fun) =:=
+              #validation{type = by, args = Fun}
+          end).
+
+validate_field_by_fun_returns_record() ->
+  ?FORALL({Field, Fun}, {field_name(), field_validator_fun()},
+          begin
+            dohyo:validate(Field, by, Fun) =:=
+              #validation{type = by, field = Field, args = Fun}
           end).
 
 before_validate_returns_record() ->

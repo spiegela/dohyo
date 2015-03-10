@@ -149,6 +149,34 @@ unit_test_() ->
         fun unload_person_mock/1,
         fun failed_length_throws/0
       }
+    },
+    { "lack of by (function) arguments errors on run",
+      { setup,
+        fun() -> mock_person_schema(invalid_by()) end,
+        fun unload_person_mock/1,
+        fun by_lacks_args/0
+      }
+    },
+    { "failed by (function) throws on run",
+      { setup,
+        fun() -> mock_person_schema(valid_by()) end,
+        fun unload_person_mock/1,
+        fun failed_by_throws/0
+      }
+    },
+    { "passed by (function) is ok",
+      { setup,
+        fun() -> mock_person_schema(valid_by()) end,
+        fun unload_person_mock/1,
+        fun passed_person/0
+      }
+    },
+    { "missing field passes by (function) is ok",
+      { setup,
+        fun() -> mock_person_schema(valid_by()) end,
+        fun unload_person_mock/1,
+        fun missing_name_by_passed_person/0
+      }
     }
   ].
 
@@ -205,6 +233,11 @@ property_test_() ->
 passed_person() ->
   ?assertEqual(ok, dohyo_validations:validate(person, valid_person())).
 
+missing_name_by_passed_person() ->
+  ?assertEqual( ok,
+                dohyo_validations:validate(person, invalid_presence_person())
+              ).
+
 inclusion_lacks_args() ->
   ?assertError(badarg, dohyo_validations:validate(person, valid_person())).
 
@@ -240,6 +273,14 @@ length_lacks_args() ->
 failed_length_throws() ->
   ?assertThrow( {invalid_doc, [{pin, bad_length}]},
                  dohyo_validations:validate(person, invalid_length_person())
+              ).
+
+by_lacks_args() ->
+  ?assertError(badarg, dohyo_validations:validate(person, valid_person())).
+
+failed_by_throws() ->
+  ?assertThrow( {invalid_doc, [{name, bad_validate_by}]},
+                 dohyo_validations:validate(person, invalid_by_person())
               ).
 
 %%% Fixtures
@@ -296,6 +337,15 @@ valid_length_range() ->
     person_schema()
   ].
 
+valid_by() ->
+  [ #validation{ type = by,
+                 field = name,
+                 args = fun(N) -> N =:= "Aaron Spiegel" end
+               } | person_schema()].
+
+invalid_by() ->
+  [ #validation{type = by} | person_schema()].
+
 person_schema() ->
   [ #field{name = name, type = string},
     #field{name = salutation, type = string},
@@ -341,6 +391,13 @@ invalid_length_person() ->
   [ {name, "Aaron Spiegel"},
     {salutation, "Mr"},
     {pin, "abcdefg"},
+    {suffix, undefined}
+  ].
+
+invalid_by_person() ->
+  [ {name, "James Doe"},
+    {salutation, "Jr"},
+    {pin, "1234"},
     {suffix, undefined}
   ].
 

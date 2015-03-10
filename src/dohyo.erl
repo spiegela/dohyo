@@ -49,7 +49,7 @@
 %%%
 -export([field/2, field/3]).
 -export([has_many/1, has_many/2, belongs_to/1, belongs_to/2]).
--export([validate/2, validate/3]).
+-export([validate/2, validate/3, validate_by/1]).
 -export([before_validate/1, after_validate/1, before_commit/1, before_delete/1,
          before_delete_by/1, after_read/1]).
 -export([on_create/1, on_update/1, on_delete/1, on_delete_all/1,
@@ -193,6 +193,14 @@ belongs_to(Name) ->
 -spec belongs_to(association_name(), association_opts()) -> association().
 belongs_to(Name, Opts) ->
   #association{type = belongs_to, name = Name, options = Opts}.
+
+%% @doc
+%% Returns an validation record to validate the document by a function.
+%% Function is expected to return a boolean true for a pass & false for a
+%% failure.
+%% @end
+-spec validate_by(doc_validator_fun()) -> validation().
+validate_by(Fun) -> #validation{type = by, args = Fun}.
 
 %% @equiv validate(Name, Type, []).
 -spec validate(field_name(), validation_type()) -> validation().

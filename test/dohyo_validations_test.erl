@@ -177,6 +177,20 @@ unit_test_() ->
         fun unload_person_mock/1,
         fun missing_name_by_passed_person/0
       }
+    },
+    { "passed doc by (function) is ok",
+      { setup,
+        fun() -> mock_person_schema(valid_doc_by()) end,
+        fun unload_person_mock/1,
+        fun passed_person/0
+      }
+    },
+    { "validate doc by function fail throws on run",
+      { setup,
+        fun() -> mock_person_schema(valid_doc_by()) end,
+        fun unload_person_mock/1,
+        fun failed_doc_by_throws/0
+      }
     }
   ].
 
@@ -283,6 +297,11 @@ failed_by_throws() ->
                  dohyo_validations:validate(person, invalid_by_person())
               ).
 
+failed_doc_by_throws() ->
+  ?assertThrow( {invalid_doc, [{'_', bad_validate_by}]},
+                 dohyo_validations:validate(person, invalid_inclusion_person())
+              ).
+
 %%% Fixtures
 
 invalid_inclusion() ->
@@ -336,6 +355,11 @@ valid_length_range() ->
   [ #validation{type = length, field = pin, args = {4, 6}} |
     person_schema()
   ].
+
+valid_doc_by() ->
+  [ #validation{ type = by,
+                 args = fun(Plist) -> Plist =:= valid_person() end
+               } | person_schema()].
 
 valid_by() ->
   [ #validation{ type = by,

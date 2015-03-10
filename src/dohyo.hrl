@@ -39,9 +39,8 @@
         by | presence | inclusion | exclusion | format | length.
 -type validation_args() :: [validation_arg()].
 -type validation_arg() :: term().
+-type field_validator_fun() :: fun((term()) -> boolean()).
 -type doc_validator_fun() :: fun((sumo:user_doc()) -> boolean()).
--type field_validator_fun() :: fun((sumo:user_doc(), field_name()) ->
-  boolean()).
 -type validation_error() :: {true, {field_name(), validation_error_key()}}.
 -type validation_error_key() :: bad_format | not_excluded | not_included |
                                 not_present | bad_length.

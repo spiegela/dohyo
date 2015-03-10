@@ -29,7 +29,7 @@
 %%%
 %%% Validators
 %%%
--export([presence/2, inclusion/3, exclusion/3, format/3, length/3, by/3]).
+-export([presence/2, inclusion/3, exclusion/3, format/3, length/3, by/2, by/3]).
 % -export([numericality/2, uniqueness/2, with/2]).
 
 %%%
@@ -87,8 +87,20 @@ length(Plist, Field, Length) ->
   length2(Field, lists:keyfind(Field, 1, Plist), Length).
 
 %% @doc
-%% Tests proplist field value against provided value. Return type is compatible
-%% with lists:filtermap/2.
+%% Tests proplist against provided function. Return type is compatible with
+%% lists:filtermap/2.
+%% @end
+-spec by(proplists:proplist(), field_validator_fun()) ->
+  false | {true, {field_name(), bad_length}}.
+by(Plist, Fun) ->
+  case Fun(Plist) of
+    false -> {true, {'_', bad_validate_by}};
+    true -> false
+  end.
+
+%% @doc
+%% Tests proplist field value against provided function. Return type is
+%% compatible with lists:filtermap/2.
 %% @end
 -spec by(proplists:proplist(), field_name(), field_validator_fun()) ->
   false | {true, {field_name(), bad_length}}.

@@ -131,7 +131,7 @@ params_to_conditions(Params) ->
         string:join([atom_to_list(Field), atom_to_list(Val)], " = ")
       end, Params
     ),
-    " AND "
+    " and "
   ).
 
 -spec maybe_polymorph(module(), module(), association_opts()) ->

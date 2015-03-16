@@ -227,6 +227,36 @@ unit_test_() ->
         end,
         fun author_has_many_tags/0
       }
+    },
+    { "Article has many tag families through tags",
+      { setup,
+        fun() -> 
+          meck:new(article, [non_strict]),
+          meck:expect(article, schema, [], article_schema()),
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
+          Sql = lists:concat( [ "select tag_family.* from tag_family ",
+                                "left join tag ",
+                                "on tag_family.tag_id = tag.id ",
+                                "where tag.taggable_id = 2 ",
+                                "and tag.taggable_type = article;"
+                              ]
+                            ),
+          TagFamilies = [tag_family_2()],
+          meck:expect(sumo_backend_mysql, get_pool, [article], fakepool),
+          meck:expect( sumo_store_mysql_extra,
+                       find_by_sql,
+                       [Sql, tag_family, {state, fakepool}],
+                       TagFamilies
+                     )
+        end,
+        fun(_) ->
+          meck:unload(article),
+          meck:unload(sumo_backend_mysql),
+          meck:unload(sumo_store_mysql_extra),
+          meck:unload(sumo_internal)
+        end,
+        fun article_has_many_tag_families/0
+      }
     }
   ].
 
@@ -387,6 +417,13 @@ author_has_many_tags() ->
                                    ),
   ?assertEqual([tag_1(), tag_5(), tag_6()], Result).
 
+article_has_many_tag_families() ->
+  Result = dohyo_associations:fetch( article,
+                                     has_many_tag_families_through(),
+                                     article_2()
+                                   ),
+  ?assertEqual([tag_family_2()], Result).
+
 %%% Fixtures
 
 article_2() ->
@@ -434,14 +471,26 @@ invalid_tag_4() -> [ {id, 4}, {taggable_id, 3}, {name, "Test"} ].
 tag_5() -> [ {id, 5},
              {taggable_type, "article"},
              {taggable_id, 2},
+             {tag_family_id, 1},
              {name, "Programming"}
            ].
 
 tag_6() -> [ {id, 6},
              {taggable_type, "article"},
              {taggable_id, 2},
+             {tag_family_id, 2},
              {name, "Family"}
            ].
+
+tag_family_1() -> [ {id, 1},
+                    {tag_id, 5},
+                    {name, "Work"}
+                  ].
+
+tag_family_2() -> [ {id, 2},
+                    {tag_id, 6},
+                    {name, "Home"}
+                  ].
 
 belongs_to_author() ->
   #association{type = belongs_to, name = author}.
@@ -474,6 +523,17 @@ belongs_to_taggable() ->
   #association{type = belongs_to, name = taggable,
                options = #{polymorphic => true}}.
 
+belongs_to_tag() ->
+  #association{type = belongs_to, name = tag}.
+
+has_many_tag_families() ->
+  #association{type = has_many, name = tag_families,
+               options = #{schema => tag_family}}.
+
+has_many_tag_families_through() ->
+  #association{type = has_many, name = tag_families,
+               options = #{schema => tag_family, through => tags}}.
+
 has_many_as_special() ->
   #association{type = has_many, name = comments,
                options = #{schema => comment, foreign_key => special_id}}.
@@ -496,7 +556,11 @@ article_schema() ->
     #association{type = belongs_to, name = author,
                  options = #{schema => author, attrs => [not_null]}},
     #association{type = belongs_to, name = category,
-                 options = #{schema => category}}
+                 options = #{schema => category}},
+    #association{type = has_many, name = tags,
+                 options = #{schema => tag, as => taggable}},
+    #association{type = has_many, name = tag_families,
+                 options = #{schema => tag_family, through => tags}}
   ].
 
 login_schema() ->

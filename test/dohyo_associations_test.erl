@@ -198,6 +198,35 @@ unit_test_() ->
         end,
         fun page_has_many_tags_as_taggable/0
       }
+    },
+    { "Article has many commenters through comments",
+      { setup,
+        fun() -> 
+          meck:new(author, [non_strict]),
+          meck:expect(author, schema, [], author_schema()),
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
+          Sql = lists:concat( [ "select tag.* from tag ",
+                                "left join article ",
+                                "on tag.article_id = article.id ",
+                                "where article.author_id = 2;"
+                              ]
+                            ),
+          Tags = [tag_1(), tag_5(), tag_6()],
+          meck:expect(sumo_backend_mysql, get_pool, [author], fakepool),
+          meck:expect( sumo_store_mysql_extra,
+                       find_by_sql,
+                       [Sql, tag, {state, fakepool}],
+                       Tags
+                     )
+        end,
+        fun(_) ->
+          meck:unload(author),
+          meck:unload(sumo_backend_mysql),
+          meck:unload(sumo_store_mysql_extra),
+          meck:unload(sumo_internal)
+        end,
+        fun author_has_many_tags/0
+      }
     }
   ].
 
@@ -351,7 +380,18 @@ missing_poly_type_badarg() ->
                                                 )
                ).
 
+author_has_many_tags() ->
+  Result = dohyo_associations:fetch( author,
+                                     has_many_tags_through(),
+                                     author_2()
+                                   ),
+  ?assertEqual([tag_1(), tag_5(), tag_6()], Result).
+
 %%% Fixtures
+
+article_2() ->
+  [ {id, 2}, {title, "Article #2"}, {content, "Really rolling now."},
+    {author_id, 2}, {tag_id, 5} ].
 
 article_3() ->
   [ {id, 3}, {title, "My Third Article"}, {content, "Some good stuf here..."},
@@ -391,6 +431,18 @@ tag_3() -> [ {id, 3},
 
 invalid_tag_4() -> [ {id, 4}, {taggable_id, 3}, {name, "Test"} ].
 
+tag_5() -> [ {id, 5},
+             {taggable_type, "article"},
+             {taggable_id, 2},
+             {name, "Programming"}
+           ].
+
+tag_6() -> [ {id, 6},
+             {taggable_type, "article"},
+             {taggable_id, 2},
+             {name, "Family"}
+           ].
+
 belongs_to_author() ->
   #association{type = belongs_to, name = author}.
 
@@ -410,6 +462,14 @@ has_many_tags_as_page() ->
   #association{type = has_many, name = tags,
                options = #{schema => tag, as => taggable}}.
 
+has_many_articles() ->
+  #association{type = has_many, name = articles,
+               options = #{schema => article}}.
+
+has_many_tags_through() ->
+  #association{type = has_many, name = tags,
+               options = #{schema => tag, through => articles}}.
+
 belongs_to_taggable() ->
   #association{type = belongs_to, name = taggable,
                options = #{polymorphic => true}}.
@@ -417,6 +477,15 @@ belongs_to_taggable() ->
 has_many_as_special() ->
   #association{type = has_many, name = comments,
                options = #{schema => comment, foreign_key => special_id}}.
+
+author_schema() ->
+  [ #field{name = id, type = integer, attrs = [not_null, autoincrement]},
+    #field{name = name, type = string},
+    #association{type = has_many, name = articles,
+                 options = #{schema => article}},
+    #association{type = has_many, name = tags,
+                 options = #{schema => tag, through => articles}}
+  ].
 
 article_schema() ->
   [ #field{name = id, type = integer, attrs = [not_null, autoincrement]},

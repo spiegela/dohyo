@@ -60,33 +60,91 @@ fetch_ids( Module,
   LKey    = local_key(belongs_to, Module, Name, Opts),
   {_, Id} = lists:keyfind(LKey, 1, Plist), Id.
 
--spec fetch(
-        module(),
-        association(),
-        proplists:proplist()
-       ) -> proplists:proplist().
-fetch(Module, #association{type = has_many, options = Opts}=Assoc, Plist) ->
-  {Schema, FKey, ID} = query_params(has_many, Module, Assoc, Plist),
-  sumo:find_by(Schema, [{FKey, ID}|maybe_polymorph(Module, Opts)]);
+-spec fetch( module(), association(), proplists:proplist()) ->
+  proplists:proplist().
+fetch( Module,
+       #association{ type = has_many, options = #{through := Through} }=Assoc,
+       Plist
+     ) ->
+  #association{type = ThrType} = ThrAssoc = lookup(Module, Through),
+  {ThrSchema, TarParams} = query_params(ThrType, Module, ThrAssoc, Plist),
+  {TarSchema, [{ThrFKey, _}|MaybePoly]} =
+    query_params(has_many, ThrSchema, Assoc, Plist),
+  ThrLKey = lists:concat([atom_to_list(ThrSchema), ".", unary_key(ThrSchema)]),
+  Sql = lists:concat([ "select ", TarSchema, ".* from ", TarSchema,
+                       " left join ", ThrSchema, " on ",
+                       params_to_conditions([{ThrFKey,ThrLKey}|MaybePoly]),
+                       " where ", params_to_conditions(TarParams), ";"
+                     ]),
+  Pool = sumo_backend_mysql:get_pool(Module),
+  io:format("~p~n", [Sql]),
+  sumo_store_mysql_extra:find_by_sql(Sql, TarSchema, {state, Pool});
+fetch(Module, #association{type = has_many}=Assoc, Plist) ->
+  {Schema, Params} = query_params(has_many, Module, Assoc, Plist),
+  sumo:find_by(Schema, Params);
 fetch(Module, #association{type = belongs_to}=Assoc, Plist) ->
-  {Schema, FKey, ID} = query_params(belongs_to, Module, Assoc, Plist),
-  sumo:find_one(Schema, [{FKey, ID}]).
+  {Schema, Params} = query_params(belongs_to, Module, Assoc, Plist),
+  case sumo:find_one(Schema, Params) of
+    not_found -> undefined;
+    Result    -> Result
+  end.
 
 -spec query_params(
         association_type(),
         module(),
         association(),
         proplists:proplist()
-       ) -> {atom(), atom(), term()}.
-query_params(Type, Module, #association{name = Name, options = Opts}, Plist) ->
-  LKey    = local_key(Type, Module, Name, Opts),
+       ) -> {atom(), proplists:proplist()}.
+query_params( has_many,
+              Module,
+              #association{name = Name, options = Opts},
+              Plist
+            ) ->
+  LKey    = local_key(has_many, Module, Name, Opts),
   {_, ID} = lists:keyfind(LKey, 1, Plist),
-  {schema(Type, Name, Opts, Plist), foreign_key(Type, Module, Opts), ID}.
+  Schema  = schema(has_many, Name, Opts, Plist),
+  FKey    = prepend_to_atom( atom_to_list(Schema) ++ ".",
+                             foreign_key(has_many, Module, Opts)
+                           ),
+  {Schema, [{FKey, ID}|maybe_polymorph(Schema, Module, Opts)]};
+query_params( belongs_to,
+              Module,
+              #association{name = Name, options = Opts},
+              Plist
+            ) ->
+  LKey    = local_key(belongs_to, Module, Name, Opts),
+  {_, ID} = lists:keyfind(LKey, 1, Plist),
+  Schema  = schema(belongs_to, Name, Opts, Plist),
+  FKey    = prepend_to_atom( atom_to_list(Schema) ++ ".",
+                             foreign_key(belongs_to, Module, Opts)
+                           ),
+  {Schema, [{FKey, ID}]}.
 
--spec maybe_polymorph(module(), association_opts()) -> proplists:proplist().
-maybe_polymorph(Module, #{as := PolyKey}) ->
-  [{append_to_atom("_type", PolyKey), Module}];
-maybe_polymorph(_Module, _Opts) ->
+-spec params_to_conditions(proplists:proplist()) -> string().
+params_to_conditions(Params) ->
+  string:join(
+    lists:map(
+      fun({Field, Val}) when is_integer(Val) ->
+        string:join([atom_to_list(Field), integer_to_list(Val)], " = ");
+          ({Field, Val}) when is_list(Val) ->
+        string:join([atom_to_list(Field), Val], " = ");
+          ({Field, Val}) when is_atom(Val) ->
+        string:join([atom_to_list(Field), atom_to_list(Val)], " = ")
+      end, Params
+    ),
+    " AND "
+  ).
+
+-spec maybe_polymorph(module(), module(), association_opts()) ->
+  proplists:proplist().
+maybe_polymorph(Schema, Module, #{as := PolyKey}) ->
+  [ { prepend_to_atom( atom_to_list(Schema) ++ ".",
+                       append_to_atom("_type", PolyKey)
+                     ),
+      Module
+    }
+  ];
+maybe_polymorph(_Schema, _Module, _Opts) ->
   [].
 
 -spec schema(
@@ -138,8 +196,13 @@ unary_key(Module) -> sumo_internal:id_field_name(Module).
 
 %% @private
 -spec append_to_atom(string(), association_name()) -> atom().
-append_to_atom(String, Assoc) ->
-  list_to_atom(lists:concat([atom_to_list(Assoc), String])).
+append_to_atom(String, Atom) ->
+  list_to_atom(lists:concat([atom_to_list(Atom), String])).
+
+%% @private
+-spec prepend_to_atom(string(), association_name()) -> atom().
+prepend_to_atom(String, Atom) ->
+  list_to_atom(lists:concat([String, atom_to_list(Atom)])).
 
 %% @private
 -spec select_ids(module(), [proplists:proplist()]) ->

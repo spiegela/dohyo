@@ -77,7 +77,6 @@ fetch( Module,
                        " where ", params_to_conditions(TarParams), ";"
                      ]),
   Pool = sumo_backend_mysql:get_pool(Module),
-  io:format("~p~n", [Sql]),
   sumo_store_mysql_extra:find_by_sql(Sql, TarSchema, {state, Pool});
 fetch(Module, #association{type = has_many}=Assoc, Plist) ->
   {Schema, Params} = query_params(has_many, Module, Assoc, Plist),

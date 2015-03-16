@@ -40,13 +40,11 @@ unit_test_() ->
     { "Errors on unknown association lookup",
       { setup,
         fun() ->
-          meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:new(login, [non_strict]),
           meck:expect(login, schema, [], login_schema())
         end,
         fun(_) ->
-          meck:unload(login),
-          meck:unload(sumo_internal)
+          meck:unload(login)
         end,
         fun association_lookup_badarg/0
       }
@@ -58,34 +56,34 @@ unit_test_() ->
       { setup,
         fun() -> 
           meck:expect(sumo_internal, id_field_name, ['_'], id),
-          meck:expect(sumo, find_by, [comment, [{article_id, 3}]], [])
+          meck:expect(sumo, find_by, [comment, [{'comment.article_id', 3}]], [])
         end,
         fun(_) ->
           meck:unload(sumo_internal),
           meck:unload(sumo)
         end,
-        fun article_has_comments/0
+        fun article_has_no_comments/0
       }
     },
     { "Article with comments fetches list",
       { setup,
         fun() -> 
           meck:expect(sumo_internal, id_field_name, ['_'], id),
-          meck:expect(sumo, find_by, [comment, [{article_id, 3}]],
+          meck:expect(sumo, find_by, [comment, [{'comment.article_id', 3}]],
                       comment_list())
         end,
         fun(_) ->
             meck:unload(sumo_internal),
             meck:unload(sumo)
         end,
-        fun article_has_no_comments/0
+        fun article_has_comments/0
       }
     },
     { "Article with no author fetches undefined",
       { setup,
         fun() -> 
           meck:expect(sumo_internal, id_field_name, ['_'], id),
-          meck:expect(sumo, find_one, [author, [{id, 2}]], not_found)
+          meck:expect(sumo, find_one, [author, [{'author.id', 2}]], not_found)
         end,
         fun(_) ->
             meck:unload(sumo_internal),
@@ -98,7 +96,7 @@ unit_test_() ->
       { setup,
         fun() -> 
           meck:expect(sumo_internal, id_field_name, ['_'], id),
-          meck:expect(sumo, find_one, [author, [{id, 2}]], author_2())
+          meck:expect(sumo, find_one, [author, [{'author.id', 2}]], author_2())
         end,
         fun(_) ->
             meck:unload(sumo_internal),
@@ -110,11 +108,10 @@ unit_test_() ->
     { "Article with author & alternate foreign_key fetches plist",
       { setup,
         fun() -> 
-          meck:expect(sumo_internal, id_field_name, ['_'], id),
-          meck:expect(sumo, find_one, [author, [{alternate_id, 2}]], author_2())
+          meck:expect(sumo, find_one, [author, [{'author.alternate_id', 2}]],
+                      author_2())
         end,
         fun(_) ->
-            meck:unload(sumo_internal),
             meck:unload(sumo)
         end,
         fun article_foreign_key_belongs_to_author/0
@@ -124,7 +121,7 @@ unit_test_() ->
       { setup,
         fun() -> 
           meck:expect(sumo_internal, id_field_name, ['_'], id),
-          meck:expect(sumo, find_one, [author, [{id, 4}]], author_2())
+          meck:expect(sumo, find_one, [author, [{'author.id', 4}]], author_2())
         end,
         fun(_) ->
             meck:unload(sumo_internal),
@@ -139,7 +136,7 @@ unit_test_() ->
           meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:new(article, [non_strict]),
           meck:expect(article, schema, [], article_schema()),
-          meck:expect(sumo, find_by, [comment, [{article_id, 3}]], [])
+          meck:expect(sumo, find_by, [comment, [{'comment.article_id', 3}]], [])
         end,
         fun(_) ->
           meck:unload(article),
@@ -155,33 +152,30 @@ unit_test_() ->
           meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:new(article, [non_strict]),
           meck:expect(article, schema, [], article_schema()),
-          meck:expect(sumo, find_by, [comment, [{article_id, 3}]],
+          meck:expect(sumo, find_by, [comment, [{'comment.article_id', 3}]],
                       comment_list())
         end,
         fun(_) ->
           meck:unload(sumo),
-          meck:unload(article),
-          meck:unload(sumo_internal)
+          meck:unload(sumo_internal),
+          meck:unload(article)
         end,
         fun article_has_comment_ids/0
       }
     },
     { "Article with author fetches id",
-      { setup,
-        fun() -> 
-          meck:expect(sumo, find_one, [author, [{id, 2}]], author_2())
-        end,
-        fun(_) -> meck:unload(sumo) end,
-        fun article_belongs_to_author_id/0
-      }
+      fun article_belongs_to_author_id/0
     },
     { "Tag with taggable page fetches plist",
       { setup,
         fun() -> 
           meck:expect(sumo_internal, id_field_name, ['_'], id),
-          meck:expect(sumo, find_one, [page, [{id, 1}]], tag_1())
+          meck:expect(sumo, find_one, [page, [{'page.id', 1}]], page_1())
         end,
-        fun(_) -> meck:unload(sumo) end,
+        fun(_) ->
+          meck:unload(sumo),
+          meck:unload(sumo_internal)
+        end,
         fun tag_belongs_to_taggable_page/0
       }
     },
@@ -191,7 +185,10 @@ unit_test_() ->
           meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:expect(sumo,
                       find_by,
-                      [tag, [{taggable_id, 1}, {taggable_type, page}]],
+                      [tag, [ {'tag.taggable_id', 1},
+                              {'tag.taggable_type', page}
+                            ]
+                      ],
                       [tag_1(), tag_3()]
                      )
         end,
@@ -208,58 +205,141 @@ unit_test_() ->
 
 article_has_no_comments() ->
   Result = dohyo_associations:fetch(article, has_many_comments(), article_3()),
-  ?_assertEqual([], Result).
+  [ ?assertEqual([], Result),
+    ?assert(meck:validate(sumo_internal)),
+    ?assertEqual(1, meck:num_calls(sumo_internal, id_field_name, ['_'])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls( sumo,
+                                    find_by,
+                                    [comment, [{'comment.article_id', 3}]]
+                                  )
+                )
+  ].
 
 article_has_comments() ->
   Result = dohyo_associations:fetch(article, has_many_comments(), article_3()),
-  ?_assertEqual(comment_list(), Result).
+  [ ?assertEqual(comment_list(), Result),
+    ?assert(meck:validate(sumo_internal)),
+    ?assertEqual(1, meck:num_calls(sumo_internal, id_field_name, ['_'])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls( sumo,
+                                    find_by,
+                                    [comment, [{'comment.article_id', 3}]]
+                                  )
+                )
+  ].
 
 article_belongs_to_null_author() ->
   Result = dohyo_associations:fetch(article, belongs_to_author(), article_3()),
-  ?_assertEqual(undefined, Result).
+  [ ?assertEqual(undefined, Result),
+    ?assert(meck:validate(sumo_internal)),
+    ?assertEqual(1, meck:num_calls(sumo_internal, id_field_name, ['_'])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual( 1,
+                  meck:num_calls(sumo, find_one, [author, [{'author.id', 2}]])
+                )
+  ].
 
 article_belongs_to_author() ->
   Result = dohyo_associations:fetch(article, belongs_to_author(), article_3()),
-  ?_assertEqual(author_2(), Result).
+  [ ?assertEqual(author_2(), Result),
+    ?assert(meck:validate(sumo_internal)),
+    ?assertEqual(1, meck:num_calls(sumo_internal, id_field_name, ['_'])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual( 1,
+                  meck:num_calls(sumo, find_one, [author, [{'author.id', 2}]])
+                )
+  ].
 
 article_foreign_key_belongs_to_author() ->
   Result = dohyo_associations:fetch(article, foreign_key_belongs_to_author(),
                                     article_3()),
-  ?_assertEqual(author_2(), Result).
+  [ ?assertEqual(author_2(), Result),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls( sumo,
+                                    find_one,
+                                    [author, [{'author.alternate_id', 2}]]
+                                  )
+                )
+  ].
 
 article_local_key_belongs_to_author() ->
   Result = dohyo_associations:fetch(article, local_key_belongs_to_author(),
                                     article_3()),
-  ?_assertEqual(author_2(), Result).
+  [ ?assertEqual(author_2(), Result),
+    ?assert(meck:validate(sumo_internal)),
+    ?assertEqual(1, meck:num_calls(sumo_internal, id_field_name, ['_'])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls( sumo,
+                                    find_one,
+                                    [author, [{'author.id', 4}]]
+                                  )
+                )
+  ].
 
 article_has_no_comment_ids() ->
   Result = dohyo_associations:fetch_ids( article,
                                          has_many_comments(),
                                          article_3()
                                        ),
-  ?_assertEqual([], Result).
+  [ ?assertEqual([], Result),
+    ?assert(meck:validate(sumo_internal)),
+    ?assertEqual(2, meck:num_calls(sumo_internal, id_field_name, ['_'])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls( sumo,
+                                    find_by,
+                                    [comment, [{'comment.article_id', 3}]]
+                                  )
+                )
+  ].
 
 article_has_comment_ids() ->
   Result = dohyo_associations:fetch_ids( article,
                                          has_many_comments(),
                                          article_3()
                                        ),
-  ?_assertEqual([3, 4, 5], Result).
+  [ ?assertEqual([3, 4, 5], Result),
+    ?assert(meck:validate(sumo_internal)),
+    ?assertEqual(2, meck:num_calls(sumo_internal, id_field_name, ['_'])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls( sumo,
+                                    find_by,
+                                    [comment, [{'comment.article_id', 3}]]
+                                  )
+                )
+  ].
 
 article_belongs_to_author_id() ->
   Result = dohyo_associations:fetch_ids( article,
                                          belongs_to_author(),
                                          article_3()
                                        ),
-  ?_assertEqual(2, Result).
+  ?assertEqual(2, Result).
 
 page_has_many_tags_as_taggable() ->
   Result = dohyo_associations:fetch(page, has_many_tags_as_page(), page_1()),
-  ?_assertEqual([tag_1(), tag_3()], Result).
+  [ ?assertEqual([tag_1(), tag_3()], Result),
+    ?assert(meck:validate(sumo_internal)),
+    ?assertEqual(1, meck:num_calls(sumo_internal, id_field_name, ['_'])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls( sumo,
+                                    find_by,
+                                    [tag, [ {'tag.taggable_id', 1},
+                                            {'tag.taggable_type', page}
+                                          ]
+                                    ]
+                                  )
+                )
+  ].
 
 tag_belongs_to_taggable_page() ->
   Result = dohyo_associations:fetch(tag, belongs_to_taggable(), tag_1()),
-  ?_assertEqual(page_1(), Result).
+  [ ?assertEqual(page_1(), Result),
+    ?assert(meck:validate(sumo_internal)),
+    ?assertEqual(1, meck:num_calls(sumo_internal, id_field_name, ['_'])),
+    ?assert(meck:validate(sumo)),
+    ?assertEqual(1, meck:num_calls(sumo, find_one, [page, [{'page.id', 1}]]))
+  ].
 
 association_lookup_badarg() ->
   ?assertError(badarg, dohyo_associations:lookup(login, whale)).

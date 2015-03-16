@@ -374,7 +374,7 @@ wrap_sumo_find_by_5() ->
 fetches_has_many_association() ->
   Login = login(),
   Roles = dohyo:association(login, roles, Login),
-  Conditions = [{login_id, 5}],
+  Conditions = [{'role.login_id', 5}],
   [ ?assert(meck:validate(login)),
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
@@ -385,7 +385,7 @@ fetches_has_many_association() ->
 fetches_belongs_to_association() ->
   Login = login(),
   Account = dohyo:association(login, account, Login),
-  Conditions = [{id, 12}],
+  Conditions = [{'account.id', 12}],
   [ ?assert(meck:validate(login)),
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
@@ -396,7 +396,7 @@ fetches_belongs_to_association() ->
 fetches_has_many_ids() ->
   Login = login(),
   RolesIds = dohyo:association_ids(login, roles, Login),
-  Conditions = [{login_id, 5}],
+  Conditions = [{'role.login_id', 5}],
   [ ?assert(meck:validate(login)),
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
@@ -416,8 +416,8 @@ fetches_belongs_to_ids() ->
 fetches_all_associations() ->
   Login = login(),
   Assocs = dohyo:all_associations(login, Login),
-  RoleConditions = [{login_id, 5}],
-  AcctConditions = [{id, 12}],
+  RoleConditions = [{'role.login_id', 5}],
+  AcctConditions = [{'account.id', 12}],
   [ ?assert(meck:validate(login)),
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
@@ -429,7 +429,7 @@ fetches_all_associations() ->
 fetches_all_association_ids() ->
   Login = login(),
   AssocIds = dohyo:all_association_ids(login, Login),
-  RoleConditions = [{login_id, 5}],
+  RoleConditions = [{'role.login_id', 5}],
   [ ?assert(meck:validate(login)),
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
@@ -441,7 +441,7 @@ embeds_has_many_association() ->
   Login = login(),
   Roles = roles(),
   Login2 = dohyo:associate(login, roles, Login),
-  Conditions = [{login_id, 5}],
+  Conditions = [{'role.login_id', 5}],
   [ ?assert(meck:validate(login)),
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
@@ -453,7 +453,7 @@ embeds_belongs_to_association() ->
   Login = login(),
   Account = account(),
   Login2 = dohyo:associate(login, account, Login),
-  Conditions = [{id, 12}],
+  Conditions = [{'account.id', 12}],
   [ ?assert(meck:validate(login)),
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
@@ -464,7 +464,7 @@ embeds_belongs_to_association() ->
 embeds_has_many_ids() ->
   Login = login(),
   Login2 = dohyo:associate_ids(login, roles, Login),
-  Conditions = [{login_id, 5}],
+  Conditions = [{'role.login_id', 5}],
   [ ?assert(meck:validate(login)),
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
@@ -484,8 +484,8 @@ embeds_belongs_to_ids() ->
 embeds_all_associations() ->
   Login = login(),
   Login2 = dohyo:associate_all(login, Login),
-  RoleConditions = [{login_id, 5}],
-  AcctConditions = [{id, 12}],
+  RoleConditions = [{'role.login_id', 5}],
+  AcctConditions = [{'account.id', 12}],
   [ ?assert(meck:validate(login)),
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
@@ -497,7 +497,7 @@ embeds_all_associations() ->
 embeds_all_association_ids() ->
   Login = login(),
   Login2 = dohyo:associate_all_ids(login, Login),
-  RoleConditions = [{login_id, 5}],
+  RoleConditions = [{'role.login_id', 5}],
   [ ?assert(meck:validate(login)),
     ?assertEqual(1, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
@@ -543,8 +543,8 @@ setup_mocks() ->
 setup_assoc_mocks() ->
   meck:new(login, [non_strict]),
   meck:expect(login, schema, [], login_schema()),
-  meck:expect(sumo, find_one, [account, [{id, 12}]], account()),
-  meck:expect(sumo, find_by, [role, [{login_id, 5}]], roles()),
+  meck:expect(sumo, find_one, [account, [{'account.id', 12}]], account()),
+  meck:expect(sumo, find_by, [role, [{'role.login_id', 5}]], roles()),
   meck:expect(sumo_internal, id_field_name, ['_'], id).
 
 unload_mocks(_) ->

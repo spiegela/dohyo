@@ -238,6 +238,15 @@ property_test_() ->
     ),
     ?_assertEqual(
       ?_proper_passes(valid_field_passes_length()), true
+    ),
+    ?_assertEqual(
+      ?_proper_passes(missing_field_passes_uniqueness()), true
+    ),
+    ?_assertEqual(
+      ?_proper_passes(unique_value_passes_uniqueness()), true
+    ),
+    ?_assertEqual(
+      ?_proper_passes(non_unique_value_same_id_passes_uniqueness()), true
     )
 
   ].
@@ -514,6 +523,27 @@ valid_field_passes_length() ->
   ?FORALL({{Field, Plist}, Length}, field_with_good_length(),
           begin
             dohyo_validations:length(Plist, Field, Length) =:= false
+          end).
+
+missing_field_passes_uniqueness() ->
+  ?FORALL({{Field, Plist}, Module}, {missing_field(), atom()},
+          begin
+            dohyo_validations:uniqueness(Plist, Field, Module) =:= false
+          end).
+
+unique_value_passes_uniqueness() ->
+  ?FORALL({{Field, Plist}, Module}, {present_field(), atom()},
+          begin
+            meck:expect(sumo, find_one, [Module, '_'], not_found),
+            dohyo_validations:uniqueness(Plist, Field, Module) =:= false
+          end).
+
+non_unique_value_same_id_passes_uniqueness() ->
+  ?FORALL({{Field, Plist}, Module}, {present_field(), atom()},
+          begin
+            meck:expect(sumo_internal, id_field_name, [Module], Field),
+            meck:expect(sumo, find_one, [Module, '_'], Plist),
+            dohyo_validations:uniqueness(Plist, Field, Module) =:= false
           end).
 
 %%% Generators

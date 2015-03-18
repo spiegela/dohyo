@@ -29,7 +29,7 @@
 -include_lib("dohyo.hrl").
 
 -export([before_validate/3, after_validate/3, before_commit/3, before_delete/3,
-         before_delete_by/3, after_read/3]).
+         before_delete_by/3, after_read/3, after_read_many/3]).
 
 %% @doc
 %% Run before_validate modifiers against property list in order of
@@ -84,6 +84,15 @@ before_delete_by(Module, Plist, State) ->
   proplists:proplist().
 after_read(Module, Plist, State) ->
   run_modifier(after_read, Module, Plist, State).
+
+%% @doc
+%% Run after_read_many modifiers against a list of property-lists in order of
+%% definition.  Returns a list of property-lists.
+%% @end
+-spec after_read_many(sumo:schema_name(), [sumo:user_doc()], term()) ->
+  proplists:proplist().
+after_read_many(Module, Plists, State) ->
+  run_modifier(after_read_many, Module, Plists, State).
 
 %% @private
 -spec run_modifier(

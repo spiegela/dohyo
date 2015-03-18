@@ -216,6 +216,7 @@ property_test_() ->
     ?_assertEqual(true, ?_proper_passes(before_delete_returns_record())),
     ?_assertEqual(true, ?_proper_passes(before_delete_by_returns_record())),
     ?_assertEqual(true, ?_proper_passes(after_read_returns_record())),
+    ?_assertEqual(true, ?_proper_passes(after_read_many_returns_record())),
     ?_assertEqual(true, ?_proper_passes(on_create_returns_record())),
     ?_assertEqual(true, ?_proper_passes(on_update_returns_record())),
     ?_assertEqual(true, ?_proper_passes(on_delete_returns_record())),
@@ -307,11 +308,12 @@ wrap_sumo_find_all_2() ->
   Plists = [login(), login(), login()],
   Plists = dohyo:find_all(login, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(3, meck:num_calls(login, schema, [])),
+    ?assertEqual(4, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_all, [login])),
     ?assert(meck:validate(fakemod)),
-    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []]))
+    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []])),
+    ?assertEqual(1, meck:num_calls(fakemod, after_read_many, [Plists, []]))
   ].
 
 wrap_sumo_find_all_4() ->
@@ -319,11 +321,12 @@ wrap_sumo_find_all_4() ->
   Plists = [login(), login(), login()],
   Plists = dohyo:find_all(login, username, 10, 10, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(3, meck:num_calls(login, schema, [])),
+    ?assertEqual(4, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_all, [login, username, 10, 10])),
     ?assert(meck:validate(fakemod)),
-    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []]))
+    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []])),
+    ?assertEqual(1, meck:num_calls(fakemod, after_read_many, [Plists, []]))
   ].
 
 wrap_sumo_find_by_2() ->
@@ -332,11 +335,12 @@ wrap_sumo_find_by_2() ->
   Plists = [login(), login(), login()],
   Plists = dohyo:find_by(login, Conditions, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(3, meck:num_calls(login, schema, [])),
+    ?assertEqual(4, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_by, [login, Conditions])),
     ?assert(meck:validate(fakemod)),
-    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []]))
+    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []])),
+    ?assertEqual(1, meck:num_calls(fakemod, after_read_many, [Plists, []]))
   ].
 
 wrap_sumo_find_by_4() ->
@@ -345,11 +349,12 @@ wrap_sumo_find_by_4() ->
   Plists = [login(), login(), login()],
   Plists = dohyo:find_by(login, Conditions, 10, 10, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(3, meck:num_calls(login, schema, [])),
+    ?assertEqual(4, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_by, [login, Conditions, 10, 10])),
     ?assert(meck:validate(fakemod)),
-    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []]))
+    ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []])),
+    ?assertEqual(1, meck:num_calls(fakemod, after_read_many, [Plists, []]))
   ].
 
 wrap_sumo_find_by_5() ->
@@ -358,7 +363,7 @@ wrap_sumo_find_by_5() ->
   Plists0 = [login(), login(), login()],
   Plists1 = dohyo:find_by(login, Conditions, username, 10, 10, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(3, meck:num_calls(login, schema, [])),
+    ?assertEqual(4, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual( 1,
                   meck:num_calls( sumo,
@@ -368,6 +373,7 @@ wrap_sumo_find_by_5() ->
                 ),
     ?assert(meck:validate(fakemod)),
     ?assertEqual(3, meck:num_calls(fakemod, after_read, [login(), []])),
+    ?assertEqual(1, meck:num_calls(fakemod, after_read_many, [Plists0, []])),
     ?assertEqual(Plists0, Plists1)
   ].
 
@@ -509,6 +515,7 @@ embeds_all_association_ids() ->
 
 setup_mocks() ->
   Plist = login(),
+  Plists = [login(), login(), login()],
   Id = 5,
   Conditions = [{username, "spiegela"}],
   meck:new(login, [non_strict]),
@@ -520,6 +527,7 @@ setup_mocks() ->
   meck:expect(fakemod, before_delete, [Id, []], Id),
   meck:expect(fakemod, before_delete_by, [Conditions, []], Conditions),
   meck:expect(fakemod, after_read, [Plist, []], Plist),
+  meck:expect(fakemod, after_read_many, [Plists, []], Plists),
   meck:expect(sumo, persist, [login, Plist], Plist),
   meck:expect(sumo, delete, [login, Id], true),
   meck:expect(sumo, delete_by, [login, Conditions], 11),
@@ -527,18 +535,10 @@ setup_mocks() ->
   meck:expect(sumo, find, [login, 5], Plist),
   meck:expect(sumo, find_one, [login, Conditions], Plist),
   meck:expect(sumo, find_all, [login], [Plist, Plist, Plist]),
-  meck:expect(sumo, find_all, [login, username, 10, 10], [Plist, Plist, Plist]),
-  meck:expect(sumo, find_by, [login, Conditions], [Plist, Plist, Plist]),
-  meck:expect( sumo,
-               find_by,
-               [login, Conditions, 10, 10],
-               [Plist, Plist, Plist]
-             ),
-  meck:expect( sumo,
-               find_by,
-               [login, Conditions, username, 10, 10],
-               [Plist, Plist, Plist]
-             ).  
+  meck:expect(sumo, find_all, [login, username, 10, 10], Plists),
+  meck:expect(sumo, find_by, [login, Conditions], Plists),
+  meck:expect(sumo, find_by, [login, Conditions, 10, 10], Plists),
+  meck:expect(sumo, find_by, [login, Conditions, username, 10, 10], Plists).  
 
 setup_assoc_mocks() ->
   meck:new(login, [non_strict]),
@@ -570,7 +570,8 @@ login_schema() ->
     #modifier{type = before_commit, func = fun fakemod:before_commit/2},
     #modifier{type = before_delete, func = fun fakemod:before_delete/2},
     #modifier{type = before_delete_by, func = fun fakemod:before_delete_by/2},
-    #modifier{type = after_read, func = fun fakemod:after_read/2}
+    #modifier{type = after_read, func = fun fakemod:after_read/2},
+    #modifier{type = after_read_many, func = fun fakemod:after_read_many/2}
   ].
 
 login() ->
@@ -714,6 +715,13 @@ after_read_returns_record() ->
           begin
             dohyo:after_read(Fun) =:=
               #modifier{type = after_read, func = Fun}
+          end).
+
+after_read_many_returns_record() ->
+  ?FORALL(Fun, modifier_fun(),
+          begin
+            dohyo:after_read_many(Fun) =:=
+              #modifier{type = after_read_many, func = Fun}
           end).
 
 on_create_returns_record() ->

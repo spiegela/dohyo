@@ -54,9 +54,10 @@ Local keys (in the case of `belongs_to` relationships need not be create with
 * `validate/3`
 * `validate_by/1`
 
-These functions generate schema validation entris with the following valid
+These functions generate schema validation entries with the following valid
 types:
 * presence
+* uniqueness
 * inclusion
 * exclusion
 * format
@@ -66,6 +67,12 @@ types:
 ```erlang
 %% Check presence of fields
 dohyo:validate(author, presence)
+
+%% Check uniqueness of fields
+dohyo:validate(author, presence)
+
+%% Check uniqueness of fields
+dohyo:validate(email, uniqueness, ?MODULE)
 
 %% Check that they're included in some list of good values
 dohyo:validate(some_field, inclusion, ["value1", "value2", "value3"])

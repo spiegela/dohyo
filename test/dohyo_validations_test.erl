@@ -247,6 +247,15 @@ property_test_() ->
     ),
     ?_assertEqual(
       ?_proper_passes(non_unique_value_same_id_passes_uniqueness()), true
+    ),
+    ?_assertEqual(
+      ?_proper_passes(non_unique_value_diff_id_fails_uniqueness()), true
+    ),
+    ?_assertEqual(
+      ?_proper_passes(non_unique_value_missing_id_fails_uniqueness()), true
+    ),
+    ?_assertEqual(
+      ?_proper_passes(non_unique_value_missing_id_fails_uniqueness2()), true
     )
 
   ].
@@ -546,6 +555,39 @@ non_unique_value_same_id_passes_uniqueness() ->
             dohyo_validations:uniqueness(Plist, Field, Module) =:= false
           end).
 
+non_unique_value_diff_id_fails_uniqueness() ->
+  ?FORALL( {{IdField, Plist1, Plist2}, Module},
+           {overlapping_proplists(), atom()},
+           begin
+             meck:expect(sumo_internal, id_field_name, [Module], IdField),
+             meck:expect(sumo, find_one, [Module, '_'], Plist2),
+             dohyo_validations:uniqueness(Plist1, IdField, Module) =:=
+              {true, {IdField, not_unique}}
+           end
+         ).
+
+non_unique_value_missing_id_fails_uniqueness() ->
+  ?FORALL( {{IdField, Plist1, Plist2, Field, _Value}, Module},
+           {divided_proplists_common_field(), atom()},
+           begin
+             meck:expect(sumo_internal, id_field_name, [Module], IdField),
+             meck:expect(sumo, find_one, [Module, '_'], Plist2),
+             dohyo_validations:uniqueness(Plist1, Field, Module) =:=
+               {true, {Field, not_unique}}
+           end
+         ).
+
+non_unique_value_missing_id_fails_uniqueness2() ->
+  ?FORALL( {{IdField, Plist1, Plist2, Field, _Value}, Module},
+           {divided_proplists_common_field(), atom()},
+           begin
+             meck:expect(sumo_internal, id_field_name, [Module], IdField),
+             meck:expect(sumo, find_one, [Module, '_'], Plist1),
+             dohyo_validations:uniqueness(Plist2, Field, Module) =:=
+               {true, {Field, not_unique}}
+           end
+         ).
+
 %%% Generators
 
 property() ->
@@ -558,6 +600,12 @@ present_field() ->
   ?LET( {Field, Value, {Plist1, Plist2}},
         {atom(), term(), split_proplist()},
         {Field, splice_into({Field, Value}, Plist1, Plist2)}
+      ).
+
+present_field_value() ->
+  ?LET( {Field, Value, {Plist1, Plist2}},
+        {atom(), term(), split_proplist()},
+        {Field, Value, splice_into({Field, Value}, Plist1, Plist2)}
       ).
 
 present_field(Field, {value, Value}) ->
@@ -573,10 +621,10 @@ split_proplist(Field) ->
   ?LET(Plist, missing_field(Field), split_at_random(Plist)).
 
 missing_field(Field) ->
-  ?SUCHTHAT(Plist, proplist(), is_not_a_key(Field, Plist)).
+  ?SUCHTHAT(Plist, proplist(), not is_a_key(Field, Plist)).
 
 missing_field() ->
-  ?SUCHTHAT({Field, Plist}, field_lookup(), is_not_a_key(Field, Plist)).
+  ?SUCHTHAT({Field, Plist}, field_lookup(), not is_a_key(Field, Plist)).
 
 field_lookup() -> {atom(), proplist()}.
 
@@ -603,6 +651,43 @@ matching_field() ->
         {atom(), matching_regex()},
         {present_field(Field, {value, Binary}), Regex}
       ).
+
+overlapping_proplists() ->
+  ?LET( {Field, Value, Plist},
+        present_field_value(),
+        { Field,
+          Plist,
+          lists:keystore( Field,
+                          1,
+                          Plist,
+                          {Field, ?SUCHTHAT(Term, term(), Term =/= Value)}
+                        )
+        }
+      ).
+
+divided_proplists_common_field() ->
+  ?LET( {IdField, Plist1, Plist2, Field, Value},
+        divided_proplists_field_value(),
+        { IdField,
+          lists:keystore(Field, 1, Plist1, {Field, Value}),
+          lists:keystore(Field, 1, Plist2, {Field, Value}),
+          Field,
+          Value
+        }
+      ).
+
+divided_proplists_field_value() ->
+  ?LET( {IdField, Plist1, Plist2},
+        divided_proplists(),
+        { IdField,
+          Plist1,
+          Plist2,
+          ?SUCHTHAT(Term, term(), Term =/= IdField), term()
+        }
+      ).
+
+divided_proplists() ->
+  ?LET({Field, Plist}, present_field(), {Field, Plist, missing_field(Field)}).
 
 split_list() -> ?LET(List, list(), split_at_random(List)).
 
@@ -667,7 +752,7 @@ split_at_random(Plist) -> lists:split(random_index(Plist), Plist).
 
 random_index(Plist) -> random:uniform(length(Plist)).
 
-is_not_a_key(Field, Plist) -> not lists:keymember(Field, 1, Plist).
+is_a_key(Field, Plist) -> lists:keymember(Field, 1, Plist).
 
 splice_value_into(Field, Plist, InList1, InList2) ->
   {_, Value} = lists:keyfind(Field, 1, Plist),

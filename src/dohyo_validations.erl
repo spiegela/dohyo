@@ -29,8 +29,11 @@
 %%%
 %%% Validators
 %%%
--export([presence/2, inclusion/3, exclusion/3, format/3, length/3, by/2, by/3]).
-% -export([numericality/2, uniqueness/2, with/2]).
+-export( [ presence/2, inclusion/3, exclusion/3, format/3, length/3, by/2, by/3,
+           uniqueness/3
+         ]
+       ).
+% -export([numericality/2, ]).
 
 %%%
 %%% Validation Actions
@@ -105,6 +108,15 @@ by(Plist, Fun) ->
 -spec by(proplists:proplist(), field_name(), field_validator_fun()) ->
   false | {true, {field_name(), bad_length}}.
 by(Plist, Field, Fun) -> by2(Field, lists:keyfind(Field, 1, Plist), Fun).
+
+%% @doc
+%% Tests proplist field for uniqueness within the document module specified.
+%% Return type is compatible with lists:filtermap/2.
+%% @end
+-spec uniqueness(proplists:proplist(), field_name(), module()) ->
+  false | {true, {field_name(), not_unique}}.
+uniqueness(Plist, Field, Module) ->
+  uniqueness2(Field, lists:keyfind(Field, 1, Plist), Module, Plist).
 
 %%% Private Functions
 
@@ -186,6 +198,44 @@ by2(Field, {Field, Value}, Fun) ->
     true -> false
   end.
 
+%% @private
+-spec uniqueness2( field_name(),
+                   false | {field_name(), term()},
+                   module(),
+                   {atom(), term()}
+                 ) ->
+  false | {true, {field_name(), not_unique}}.
+uniqueness2(_Field, false, _Module, _Plist) ->
+  false;
+uniqueness2(Field, TestParam, Module, Plist) ->
+  case sumo:find_one(Module, [TestParam]) of
+    not_found -> false;
+    Result    -> uniqueness_matching_id_param(Field, Result, Module, Plist)
+  end.
+
+%% @private
+-spec uniqueness_matching_id_param( field_name(),
+                                    proplists:proplist(),
+                                    module(),
+                                    proplists:proplist()
+                                  ) ->
+  false | {true, {field_name(), not_unique}}.
+uniqueness_matching_id_param(Field, Result, Module, Plist) ->
+  IdField = sumo_internal:id_field_name(Module),
+  case lists:keyfind(IdField, 1, Plist) of
+    false    -> {true, {Field, not_unique}};
+    IdParam -> document_ids_match(Field, IdParam, Result)
+  end.
+
+-spec document_ids_match( field_name(),
+                          {field_name(), term()}, proplists:proplist()) ->
+  false | {true, {field_name(), not_unique}}.
+document_ids_match(Field, IdParam, Result) ->
+  case lists:member(IdParam, Result) of
+    false -> {true, {Field, not_unique}};
+    true  -> false  % This and the duplicate object share the same ID, so
+  end.              % this is an update to an existing object.
+  
 %% @doc
 %% Run a dohyo schema's validations against the provided property-list.  Errors
 %% will be first aggregated and then thrown if they exist.

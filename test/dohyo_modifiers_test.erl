@@ -79,6 +79,13 @@ unit_test_() ->
         fun unload_login_mock/1,
         fun after_read_runs/0
       }
+    },
+    { "runs after_read_many modifier",
+      { setup,
+        fun() -> mock_login_schema(after_read_many()) end,
+        fun unload_login_mock/1,
+        fun after_read_many_runs/0
+      }
     }
   ].
 
@@ -119,6 +126,14 @@ after_read_runs() ->
   {_, Dyn} = lists:keyfind(dynamic, 1, Plist),
   ?assertEqual("something cool", Dyn).
 
+after_read_many_runs() ->
+  #{ logins := Plists,
+     count  := Count
+   } = dohyo_modifiers:after_read_many(login, [login(), login()], []),
+  [ ?assertEqual([login(), login()], Plists),
+    ?assertEqual(2, Count)
+  ].
+
 %%% Fixtures
 
 login() ->
@@ -157,6 +172,11 @@ after_read() ->
     login_schema()
   ].
 
+after_read_many() ->
+  [ #modifier{type = after_read_many, func = fun add_collection_count/2} |
+    login_schema()
+  ].
+
 login_schema() ->
   [ #field{name = username, type = string},
     #field{name = password, type = string},
@@ -181,6 +201,11 @@ fake_encrypt_password(Plist, _State) ->
 
 add_dyn_field(Plist, _State) ->
   lists:keystore(dynamic, 1, Plist, {dynamic, "something cool"}).
+
+add_collection_count(Plists, _State) ->
+  #{ logins => Plists,
+     count  => length(Plists)
+   }.
 
 fail_to_delete(_Plist, _State) ->
   error(delete_contrained).

@@ -51,7 +51,7 @@
 -export([has_many/1, has_many/2, belongs_to/1, belongs_to/2]).
 -export([validate/2, validate/3, validate_by/1]).
 -export([before_validate/1, after_validate/1, before_commit/1, before_delete/1,
-         before_delete_by/1, after_read/1]).
+         before_delete_by/1, after_read/1, after_read_many/1]).
 -export([on_create/1, on_update/1, on_delete/1, on_delete_all/1,
          on_schema_create/1]).
 
@@ -116,9 +116,13 @@ find_one(Module, Conditions, State) ->
 %% @end
 -spec find_all(sumo:schema_name(), term()) -> [sumo:user_doc()].
 find_all(Module, State) ->
-  [ dohyo_modifiers:after_read(Module, Plist, State) ||
-     Plist <- sumo:find_all(Module)
-  ].
+  dohyo_modifiers:after_read_many(
+    Module,
+    [ dohyo_modifiers:after_read(Module, Plist, State) ||
+        Plist <- sumo:find_all(Module)
+    ],
+    State
+  ).
 
 %% @doc
 %% Return all the docs from the given store sorted and by offset, having run
@@ -128,18 +132,26 @@ find_all(Module, State) ->
                non_neg_integer(), term()) ->
   [sumo:user_doc()].
 find_all(Module, Sort, Limit, Offset, State) ->
-  [ dohyo_modifiers:after_read(Module, Plist, State) ||
-     Plist <- sumo:find_all(Module, Sort, Limit, Offset)
-  ].
+  dohyo_modifiers:after_read_many(
+    Module,
+    [ dohyo_modifiers:after_read(Module, Plist, State) ||
+       Plist <- sumo:find_all(Module, Sort, Limit, Offset)
+    ],
+    State
+  ).
 
 %% @doc Returns *all* docs that match Conditions, having run the after_read
 %% modifier.
 -spec find_by(sumo:schema_name(), sumo:conditions(), term()) ->
   [sumo:user_doc()].
 find_by(Module, Conditions, State) ->
-  [ dohyo_modifiers:after_read(Module, Plist, State) ||
-     Plist <- sumo:find_by(Module, Conditions)
-  ].
+  dohyo_modifiers:after_read_many(
+    Module,
+    [ dohyo_modifiers:after_read(Module, Plist, State) ||
+       Plist <- sumo:find_by(Module, Conditions)
+    ],
+    State
+  ).
 
 %% @doc Returns Limit number of docs that match Conditions, starting at
 %% offset Offset, having run the after_read modifier.
@@ -147,9 +159,13 @@ find_by(Module, Conditions, State) ->
               non_neg_integer(), term()) ->
   [sumo:user_doc()].
 find_by(Module, Conditions, Limit, Offset, State) ->
-  [ dohyo_modifiers:after_read(Module, Plist, State) ||
-     Plist <- sumo:find_by(Module, Conditions, Limit, Offset)
-  ].
+  dohyo_modifiers:after_read_many(
+    Module,
+    [ dohyo_modifiers:after_read(Module, Plist, State) ||
+       Plist <- sumo:find_by(Module, Conditions, Limit, Offset)
+    ],
+    State
+  ).
 
 %% @doc Returns Limit number of docs that match Conditions, starting at
 %% offset Offset.
@@ -157,9 +173,13 @@ find_by(Module, Conditions, Limit, Offset, State) ->
               non_neg_integer(), non_neg_integer(), term()) ->
   [sumo:user_doc()].
 find_by(Module, Conditions, Sort, Limit, Offset, State) ->
-  [ dohyo_modifiers:after_read(Module, Plist, State) ||
-     Plist <- sumo:find_by(Module, Conditions, Sort, Limit, Offset)
-  ].
+  dohyo_modifiers:after_read_many(
+    Module,
+    [ dohyo_modifiers:after_read(Module, Plist, State) ||
+       Plist <- sumo:find_by(Module, Conditions, Sort, Limit, Offset)
+    ],
+    State
+  ).
 
 %% @equiv field(Name, Type, []).
 -spec field(field_name(), field_type()) -> field().
@@ -253,6 +273,13 @@ before_delete_by(Fun) -> #modifier{type = before_delete_by, func = Fun}.
 %% @end
 -spec after_read(modifier_fun()) -> modifier().
 after_read(Fun) -> #modifier{type = after_read, func = Fun}.
+
+%% @doc
+%% Returns a modifier record of type after_read_many to be used a part of a
+%% schema
+%% @end
+-spec after_read_many(modifier_fun()) -> modifier().
+after_read_many(Fun) -> #modifier{type = after_read_many, func = Fun}.
 
 %% @doc
 %% Returns a hook record of type on_create to be used a part of a

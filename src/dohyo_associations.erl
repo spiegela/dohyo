@@ -217,16 +217,6 @@ unary_key(Table, Module) -> lists:concat([ atom_to_list(Table),
                                          ]).
 
 %% @private
-% -spec append_to_atom(string(), association_name()) -> atom().
-% append_to_atom(String, Atom) ->
-%   list_to_atom(lists:concat([atom_to_list(Atom), String])).
-
-%% @private
-% -spec prepend_to_atom(string(), association_name()) -> atom().
-% prepend_to_atom(String, Atom) ->
-%   list_to_atom(lists:concat([String, atom_to_list(Atom)])).
-
-%% @private
 -spec select_ids(module(), [proplists:proplist()]) ->
   [string() | pos_integer()].
 select_ids(Module, Entities) ->

@@ -70,7 +70,7 @@ fetch( Module,
   {ThrSchema, TarParams} = query_params(ThrType, Module, ThrAssoc, Plist),
   {TarSchema, [{ThrFKey, _}|MaybePoly]} =
     query_params(has_many, ThrSchema, Assoc, Plist),
-  ThrLKey = lists:concat([atom_to_list(ThrSchema), ".", unary_key(ThrSchema)]),
+  ThrLKey = list_to_atom(unary_key(ThrSchema, ThrSchema)),
   Sql = lists:concat([ "select ", TarSchema, ".* from ", TarSchema,
                        " left join ", ThrSchema, " on ",
                        params_to_conditions([{ThrFKey,ThrLKey}|MaybePoly]),
@@ -102,9 +102,7 @@ query_params( has_many,
   LKey    = local_key(has_many, Module, Name, Opts),
   {_, ID} = lists:keyfind(LKey, 1, Plist),
   Schema  = schema(has_many, Name, Opts, Plist),
-  FKey    = prepend_to_atom( atom_to_list(Schema) ++ ".",
-                             foreign_key(has_many, Module, Opts)
-                           ),
+  FKey    = foreign_key(has_many, Schema, Module, Opts),
   {Schema, [{FKey, ID}|maybe_polymorph(Schema, Module, Opts)]};
 query_params( belongs_to,
               Module,
@@ -114,9 +112,7 @@ query_params( belongs_to,
   LKey    = local_key(belongs_to, Module, Name, Opts),
   {_, ID} = lists:keyfind(LKey, 1, Plist),
   Schema  = schema(belongs_to, Name, Opts, Plist),
-  FKey    = prepend_to_atom( atom_to_list(Schema) ++ ".",
-                             foreign_key(belongs_to, Module, Opts)
-                           ),
+  FKey    = foreign_key(belongs_to, Schema, Module, Opts),
   {Schema, [{FKey, ID}]}.
 
 -spec params_to_conditions(proplists:proplist()) -> string().
@@ -137,12 +133,7 @@ params_to_conditions(Params) ->
 -spec maybe_polymorph(module(), module(), association_opts()) ->
   proplists:proplist().
 maybe_polymorph(Schema, Module, #{as := PolyKey}) ->
-  [ { prepend_to_atom( atom_to_list(Schema) ++ ".",
-                       append_to_atom("_type", PolyKey)
-                     ),
-      Module
-    }
-  ];
+  [ { type_key(Schema, PolyKey), Module } ];
 maybe_polymorph(_Schema, _Module, _Opts) ->
   [].
 
@@ -155,53 +146,85 @@ maybe_polymorph(_Schema, _Module, _Opts) ->
 schema(_Type, _Name, #{schema := Schema}, _Plist) ->
   Schema;
 schema(belongs_to, Name, #{polymorphic := true}, Plist) ->
-  case lists:keyfind(append_to_atom("_type", Name), 1, Plist) of
+  case lists:keyfind(type_key(Name), 1, Plist) of
     false       -> error(badarg);
     {_, Schema} -> list_to_atom(Schema)
   end;
 schema(_Type, Name, _Opts, _Plist) ->
   Name.
 
--spec foreign_key(association_type(), module(), association_opts()) -> atom().
-foreign_key(_Type, _Module, #{foreign_key := FKey}) ->
-  FKey;
-foreign_key(belongs_to, Module, _Opts) ->
-  unary_key(Module);
-foreign_key(has_many, _Module, #{as := PolyKey}) ->
-  multiple_key(PolyKey);
-foreign_key(has_many, Module, _Opts) ->
-  multiple_key(Module).
+-spec foreign_key(association_type(), atom(), module(), association_opts()) ->
+  string().
+foreign_key(_Type, Table, _Module, #{foreign_key := FKey}) ->
+  list_to_atom(lists:concat([atom_to_list(Table), ".", atom_to_list(FKey)]));
+foreign_key(belongs_to, Table, Module, _Opts) ->
+  list_to_atom(unary_key(Table, Module));
+foreign_key(has_many, Table, _Module, #{as := PolyKey}) ->
+  list_to_atom(multiple_key(Table, PolyKey));
+foreign_key(has_many, Table, Module, _Opts) ->
+  list_to_atom(multiple_key(Table, Module)).
 
 -spec local_key(
         association_type(),
         module(),
         association_name(),
         association_opts()
-       ) -> atom().
+       ) -> string().
 local_key(_Type, _Module, _Name, #{local_key := LKey}) ->
   LKey;
 local_key(belongs_to, _Module, Name, _Opts) ->
-  multiple_key(Name);
+  list_to_atom(multiple_key(Name));
 local_key(has_many, Module, _Name, _Opts) ->
-  unary_key(Module).
+  list_to_atom(unary_key(Module)).
 
 %% @private
--spec multiple_key(atom()) -> atom().
-multiple_key(Module) -> append_to_atom("_id", Module).
+-spec type_key(atom()) -> string().
+type_key(Module) -> list_to_atom(lists:concat([atom_to_list(Module), "_type"])).
 
 %% @private
--spec unary_key(atom()) -> atom().
-unary_key(Module) -> sumo_internal:id_field_name(Module).
+-spec type_key(atom(), atom()) -> string().
+type_key(Table, Module) -> list_to_atom(lists:concat( [ atom_to_list(Table),
+                                                        ".",
+                                                        atom_to_list(Module),
+                                                        "_type"
+                                                      ]
+                                                    )
+                                       ).
 
 %% @private
--spec append_to_atom(string(), association_name()) -> atom().
-append_to_atom(String, Atom) ->
-  list_to_atom(lists:concat([atom_to_list(Atom), String])).
+-spec multiple_key(atom()) -> string().
+multiple_key(Module) -> lists:concat([atom_to_list(Module), "_id"]).
 
 %% @private
--spec prepend_to_atom(string(), association_name()) -> atom().
-prepend_to_atom(String, Atom) ->
-  list_to_atom(lists:concat([String, atom_to_list(Atom)])).
+-spec multiple_key(atom(), atom()) -> string().
+multiple_key(Table, Module) -> lists:concat([ atom_to_list(Table),
+                                              ".",
+                                              atom_to_list(Module),
+                                              "_id"
+                                            ]).
+
+%% @private
+-spec unary_key(atom()) -> string().
+unary_key(Module) -> atom_to_list(sumo_internal:id_field_name(Module)).
+
+%% @private
+-spec unary_key(atom(), atom()) -> string().
+unary_key(Table, Module) -> lists:concat([ atom_to_list(Table),
+                                           ".",
+                                           atom_to_list(
+                                             sumo_internal:id_field_name(Module)
+                                           )
+                                         ]).
+
+%% @private
+% -spec append_to_atom(string(), association_name()) -> atom().
+% append_to_atom(String, Atom) ->
+%   list_to_atom(lists:concat([atom_to_list(Atom), String])).
+
+%% @private
+% -spec prepend_to_atom(string(), association_name()) -> atom().
+% prepend_to_atom(String, Atom) ->
+%   list_to_atom(lists:concat([String, atom_to_list(Atom)])).
 
 %% @private
 -spec select_ids(module(), [proplists:proplist()]) ->

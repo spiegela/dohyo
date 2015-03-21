@@ -121,8 +121,6 @@ params_to_conditions(Params) ->
     lists:map(
       fun({Field, Val}) when is_integer(Val) ->
         string:join([atom_to_list(Field), integer_to_list(Val)], " = ");
-          ({Field, Val}) when is_list(Val) ->
-        string:join([atom_to_list(Field), Val], " = ");
           ({Field, Val}) when is_atom(Val) ->
         string:join([atom_to_list(Field), atom_to_list(Val)], " = ")
       end, Params

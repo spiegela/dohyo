@@ -290,6 +290,33 @@ unit_test_() ->
         end,
         fun article_has_many_tag_families/0
       }
+    },
+    { "Article collection fetches tags inclusion",
+      { setup,
+        fun() ->
+          meck:new(article, [non_strict]),
+          meck:expect(article, schema, [], article_schema()),
+          meck:expect(sumo_internal, id_field_name, ['_'], id),
+          Sql = lists:concat( [ "select tag.* from tag",
+                                "where tag.article_id in [2, 3]"
+                              ]
+                            ),
+          Tags = [tag_1(), tag_2()],
+          meck:expect(sumo_backend_mysql, get_pool, [article], fakepool),
+          meck:expect( sumo_store_mysql_extra,
+                       find_by_sql,
+                       [Sql, tag, {state, fakepool}],
+                       Tags
+                     )
+        end,
+        fun(_) ->
+          meck:unload(article),
+          meck:unload(sumo_backend_mysql),
+          meck:unload(sumo_store_mysql_extra),
+          meck:unload(sumo_internal)
+        end,
+        fun article_fetch_tags_inclusion/0
+      }
     }
   ].
 

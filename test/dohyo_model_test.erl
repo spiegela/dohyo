@@ -61,7 +61,10 @@ sumo_schema() ->
 
 
 article_schema() ->
-  [ #field{name = id, type = integer, attrs = [not_null, autoincrement]},
+  [ #field{ name = id,
+            type = integer,
+            options = #{attrs => [not_null, autoincrement]}
+          },
     #field{name = title, type = string},
     #field{name = content, type = text},
     #association{type = has_many, name = comments,

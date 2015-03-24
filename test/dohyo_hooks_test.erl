@@ -151,7 +151,10 @@ runs_on_schema_create() ->
 article_schema() ->
   HookFun1 = fun(_) -> fakemod:hook("fired") end,
   HookFun2 = fun() -> fakemod:hook("fired") end,
-  [ #field{name = id, type = integer, attrs = [not_null, autoincrement]},
+  [ #field{ name = id,
+            type = integer,
+            options = #{ attrs => [not_null, autoincrement] }
+          },
     #field{name = title, type = string},
     #field{name = content, type = text},
     #hook{type = on_create, func = HookFun1},
@@ -162,7 +165,10 @@ article_schema() ->
   ].
 
 comment_schema() ->
-  [ #field{name = id, type = integer, attrs = [not_null, autoincrement]},
+  [ #field{ name = id,
+            type = integer,
+            options = #{ attrs => [not_null, autoincrement] }
+          },
     #field{name = content, type = text}
   ].
 

@@ -235,7 +235,7 @@ wrap_sumo_persist() ->
   Plist = dohyo:persist(login, login(), State),
   [ ?assertEqual(login(), Plist),
     ?assert(meck:validate(login)),
-    ?assertEqual(5, meck:num_calls(login, schema, [])),
+    ?assertEqual(7, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(fakemod)),
     ?assertEqual(1, meck:num_calls(fakemod, before_validate, [Plist, State])),
     ?assertEqual(1, meck:num_calls(fakemod, after_validate, [Plist, State])),
@@ -261,7 +261,7 @@ wrap_sumo_delete_by() ->
   Conditions = [{username, "spiegela"}],
   11 = dohyo:delete_by(login, Conditions, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assertEqual(2, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(fakemod)),
     ?assertEqual(1, meck:num_calls( fakemod,
                                     before_delete_by,
@@ -283,7 +283,7 @@ wrap_sumo_find() ->
   Plist = login(),
   Plist = dohyo:find(login, 5, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assertEqual(2, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find, [login, 5])),
     ?assert(meck:validate(fakemod)),
@@ -296,7 +296,7 @@ wrap_sumo_find_one() ->
   Conditions = [{username, "spiegela"}],
   Plist = dohyo:find_one(login, Conditions, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(1, meck:num_calls(login, schema, [])),
+    ?assertEqual(3, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_one, [login, Conditions])),
     ?assert(meck:validate(fakemod)),
@@ -308,7 +308,7 @@ wrap_sumo_find_all_2() ->
   Plists = [login(), login(), login()],
   Plists = dohyo:find_all(login, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(4, meck:num_calls(login, schema, [])),
+    ?assertEqual(7, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_all, [login])),
     ?assert(meck:validate(fakemod)),
@@ -321,7 +321,7 @@ wrap_sumo_find_all_4() ->
   Plists = [login(), login(), login()],
   Plists = dohyo:find_all(login, username, 10, 10, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(4, meck:num_calls(login, schema, [])),
+    ?assertEqual(7, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_all, [login, username, 10, 10])),
     ?assert(meck:validate(fakemod)),
@@ -335,7 +335,7 @@ wrap_sumo_find_by_2() ->
   Plists = [login(), login(), login()],
   Plists = dohyo:find_by(login, Conditions, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(4, meck:num_calls(login, schema, [])),
+    ?assertEqual(8, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_by, [login, Conditions])),
     ?assert(meck:validate(fakemod)),
@@ -349,7 +349,7 @@ wrap_sumo_find_by_4() ->
   Plists = [login(), login(), login()],
   Plists = dohyo:find_by(login, Conditions, 10, 10, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(4, meck:num_calls(login, schema, [])),
+    ?assertEqual(8, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual(1, meck:num_calls(sumo, find_by, [login, Conditions, 10, 10])),
     ?assert(meck:validate(fakemod)),
@@ -363,7 +363,7 @@ wrap_sumo_find_by_5() ->
   Plists0 = [login(), login(), login()],
   Plists1 = dohyo:find_by(login, Conditions, username, 10, 10, State),
   [ ?assert(meck:validate(login)),
-    ?assertEqual(4, meck:num_calls(login, schema, [])),
+    ?assertEqual(8, meck:num_calls(login, schema, [])),
     ?assert(meck:validate(sumo)),
     ?assertEqual( 1,
                   meck:num_calls( sumo,
@@ -607,14 +607,19 @@ account() ->
 field_returns_record() ->
   ?FORALL({Name, Type}, {field_name(), field_type()},
           begin
-            dohyo:field(Name, Type) =:= #field{name = Name, type = Type}
+            dohyo:field(Name, Type) =:= #field{ name = Name,
+                                                type = Type,
+                                                options = #{}
+                                              }
           end).
 
 field_with_args_returns_record() ->
-  ?FORALL({Name, Type, Attrs}, {field_name(), field_type(), field_attrs()},
+  ?FORALL({Name, Type, Options},
+          {field_name(), field_type(), #{ alias => atom() }
+          },
           begin
-            dohyo:field(Name, Type, Attrs) =:=
-              #field{name = Name, type = Type, attrs = Attrs}
+            dohyo:field(Name, Type, Options) =:=
+              #field{name = Name, type = Type, options = Options}
           end).
 
 has_many_returns_record() ->

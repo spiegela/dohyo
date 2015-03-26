@@ -68,11 +68,14 @@ unit_test_() ->
     { "Article with comments fetches list",
       { setup,
         fun() -> 
+          meck:new(comment, [non_strict]),
+          meck:expect(comment, schema, [], comment_schema()),
           meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:expect(sumo, find_by, [comment, [{'comment.article_id', 3}]],
                       comment_list())
         end,
         fun(_) ->
+            meck:unload(comment),
             meck:unload(sumo_internal),
             meck:unload(sumo)
         end,
@@ -95,12 +98,15 @@ unit_test_() ->
     { "Article with author fetches plist",
       { setup,
         fun() -> 
+          meck:new(author, [non_strict]),
+          meck:expect(author, schema, [], author_schema()),
           meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:expect(sumo, find_one, [author, [{'author.id', 2}]], author_2())
         end,
         fun(_) ->
-            meck:unload(sumo_internal),
-            meck:unload(sumo)
+          meck:unload(author),
+          meck:unload(sumo_internal),
+          meck:unload(sumo)
         end,
         fun article_belongs_to_author/0
       }
@@ -108,11 +114,14 @@ unit_test_() ->
     { "Article with author & alternate foreign_key fetches plist",
       { setup,
         fun() -> 
+          meck:new(author, [non_strict]),
+          meck:expect(author, schema, [], author_schema()),
           meck:expect(sumo, find_one, [author, [{'author.alternate_id', 2}]],
                       author_2())
         end,
         fun(_) ->
-            meck:unload(sumo)
+          meck:unload(author),
+          meck:unload(sumo)
         end,
         fun article_foreign_key_belongs_to_author/0
       }
@@ -120,12 +129,15 @@ unit_test_() ->
     { "Article with author & alternate local_key fetches plist",
       { setup,
         fun() -> 
+          meck:new(author, [non_strict]),
+          meck:expect(author, schema, [], author_schema()),
           meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:expect(sumo, find_one, [author, [{'author.id', 4}]], author_2())
         end,
         fun(_) ->
-            meck:unload(sumo_internal),
-            meck:unload(sumo)
+          meck:unload(author),
+          meck:unload(sumo_internal),
+          meck:unload(sumo)
         end,
         fun article_local_key_belongs_to_author/0
       }
@@ -150,29 +162,41 @@ unit_test_() ->
       { setup,
         fun() -> 
           meck:expect(sumo_internal, id_field_name, ['_'], id),
-          meck:new(article, [non_strict]),
-          meck:expect(article, schema, [], article_schema()),
+          meck:new(comment, [non_strict]),
+          meck:expect(comment, schema, [], comment_schema()),
           meck:expect(sumo, find_by, [comment, [{'comment.article_id', 3}]],
                       comment_list())
         end,
         fun(_) ->
           meck:unload(sumo),
           meck:unload(sumo_internal),
-          meck:unload(article)
+          meck:unload(comment)
         end,
         fun article_has_comment_ids/0
       }
     },
     { "Article with author fetches id",
-      fun article_belongs_to_author_id/0
+      { setup,
+        fun() ->
+          meck:new(tag, [non_strict]),
+          meck:expect(tag, schema, [], tag_schema())
+        end,
+        fun(_) ->
+          meck:unload(tag)
+        end,
+        fun article_belongs_to_author_id/0
+      }
     },
     { "Tag with taggable page fetches plist",
       { setup,
         fun() -> 
+          meck:new(page, [non_strict]),
+          meck:expect(page, schema, [], page_schema()),
           meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:expect(sumo, find_one, [page, [{'page.id', 1}]], page_1())
         end,
         fun(_) ->
+          meck:unload(page),
           meck:unload(sumo),
           meck:unload(sumo_internal)
         end,
@@ -182,6 +206,8 @@ unit_test_() ->
     { "Page with many tags fetches tags",
       { setup,
         fun() -> 
+          meck:new(tag, [non_strict]),
+          meck:expect(tag, schema, [], tag_schema()),
           meck:expect(sumo_internal, id_field_name, ['_'], id),
           meck:expect(sumo,
                       find_by,
@@ -193,6 +219,7 @@ unit_test_() ->
                      )
         end,
         fun(_) ->
+          meck:unload(tag),
           meck:unload(sumo),
           meck:unload(sumo_internal)
         end,
@@ -202,6 +229,8 @@ unit_test_() ->
     { "Article has many commenters through comments",
       { setup,
         fun() -> 
+          meck:new(tag, [non_strict]),
+          meck:expect(tag, schema, [], tag_schema()),
           meck:new(author, [non_strict]),
           meck:expect(author, schema, [], author_schema()),
           meck:expect(sumo_internal, id_field_name, ['_'], id),
@@ -221,6 +250,7 @@ unit_test_() ->
         end,
         fun(_) ->
           meck:unload(author),
+          meck:unload(tag),
           meck:unload(sumo_backend_mysql),
           meck:unload(sumo_store_mysql_extra),
           meck:unload(sumo_internal)
@@ -231,6 +261,8 @@ unit_test_() ->
     { "Article has many tag families through tags",
       { setup,
         fun() -> 
+          meck:new(tag_family, [non_strict]),
+          meck:expect(tag_family, schema, [], tag_family_schema()),
           meck:new(article, [non_strict]),
           meck:expect(article, schema, [], article_schema()),
           meck:expect(sumo_internal, id_field_name, ['_'], id),
@@ -251,6 +283,7 @@ unit_test_() ->
         end,
         fun(_) ->
           meck:unload(article),
+          meck:unload(tag_family),
           meck:unload(sumo_backend_mysql),
           meck:unload(sumo_store_mysql_extra),
           meck:unload(sumo_internal)
@@ -550,6 +583,25 @@ author_schema() ->
                  options = #{schema => tag, through => articles}}
   ].
 
+page_schema() ->
+  [ #field{ name = id,
+            type = integer,
+            options = #{ attrs => [not_null, autoincrement] }
+          },
+    #field{name = title, type = string},
+    #field{name = content, type = text},
+    #association{type = has_many, name = comments,
+                 options = #{schema => comment}},
+    #association{type = belongs_to, name = author,
+                 options = #{schema => author, attrs => [not_null]}},
+    #association{type = belongs_to, name = category,
+                 options = #{schema => category}},
+    #association{type = has_many, name = tags,
+                 options = #{schema => tag, as => taggable}},
+    #association{type = has_many, name = tag_families,
+                 options = #{schema => tag_family, through => tags}}
+  ].
+
 article_schema() ->
   [ #field{ name = id,
             type = integer,
@@ -582,5 +634,28 @@ login_schema() ->
     #modifier{type = before_delete, func = fun fakemod:before_delete/2},
     #modifier{type = before_delete_by, func = fun fakemod:before_delete_by/2},
     #modifier{type = after_read, func = fun fakemod:after_read/2}
+  ].
+
+comment_schema() ->
+  [ #field{name = id, type = integer},
+    #association{type = belongs_to, name = article},
+    #association{type = belongs_to, name = comment,
+                 options = #{schema => author}
+                }
+  ].
+
+tag_schema() -> 
+  [ #field{name = id, type = integer},
+    #field{name = name, type = string},
+    #field{name = taggable_type, type = string},
+    #association{type = belongs_to, name = taggable,
+                 options = #{polymorphic => true}},
+    #association{type = belongs_to, name = tag_family}
+  ].
+
+tag_family_schema() -> 
+  [ #field{name = id, type = integer},
+    #field{name = name, type = string},
+    #field{type = has_many, name = tags, options = #{schema => tag}}
   ].
 

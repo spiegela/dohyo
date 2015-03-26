@@ -77,15 +77,17 @@ fetch( Module,
                        " where ", params_to_conditions(TarParams), ";"
                      ]),
   Pool = sumo_backend_mysql:get_pool(Module),
-  sumo_store_mysql_extra:find_by_sql(Sql, TarSchema, {state, Pool});
+  Results = sumo_store_mysql_extra:find_by_sql(Sql, TarSchema, {state, Pool}),
+  [dohyo_model:alias(TarSchema, Result) || Result <- Results];
 fetch(Module, #association{type = has_many}=Assoc, Plist) ->
   {Schema, Params} = query_params(has_many, Module, Assoc, Plist),
-  sumo:find_by(Schema, Params);
+  Results = sumo:find_by(Schema, Params),
+  [dohyo_model:alias(Schema, Result) || Result <- Results];
 fetch(Module, #association{type = belongs_to}=Assoc, Plist) ->
   {Schema, Params} = query_params(belongs_to, Module, Assoc, Plist),
   case sumo:find_one(Schema, Params) of
     not_found -> undefined;
-    Result    -> Result
+    Result    -> dohyo_model:alias(Schema, Result)
   end.
 
 -spec query_params(

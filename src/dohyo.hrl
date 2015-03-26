@@ -30,9 +30,12 @@
 -type field_attr()  ::
         id | unique | index | not_null | auto_increment | {length, integer()}.
 -type field_attrs() :: [field_attr()].
--record(field, { name       :: field_name(),
-                 type       :: field_type(),
-                 attrs = [] :: field_attrs() }).
+-type field_opts() :: #{ alias => atom(), attrs => field_attrs() }.
+-record(field, { name          :: field_name(),
+                 type          :: field_type(),
+                 options = #{} :: field_opts()
+               }
+       ).
 -type field() :: #field{}.
 
 -type validation_type() ::

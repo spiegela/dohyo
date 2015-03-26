@@ -62,8 +62,10 @@ persist(Module, Plist, State) ->
   ok = dohyo_validations:validate(Module, Plist1),
   Plist2 = dohyo_modifiers:after_validate(Module, Plist1, State),
   Plist3 = dohyo_modifiers:before_commit(Module, Plist2, State),
-  Plist4 = sumo:persist(Module, Plist3),
-  dohyo_modifiers:after_read(Module, Plist4, State).
+  Plist4 = dohyo_model:unalias(Module, Plist3),
+  Plist5 = sumo:persist(Module, Plist4),
+  Plist6 = dohyo_model:alias(Module, Plist5),
+  dohyo_modifiers:after_read(Module, Plist6, State).
 
 %% @doc
 %% Alias sumo:delete/2 to keep consistent API.  Not validation or modifier is
@@ -83,8 +85,9 @@ delete(Module, Id, State) ->
 -spec delete_by(sumo:schema_name(), sumo:conditions(), term()) ->
   non_neg_integer().
 delete_by(Module, Conditions, State) ->
-  Conditions = dohyo_modifiers:before_delete_by(Module, Conditions, State),
-  sumo:delete_by(Module, Conditions).
+  Conditions1 = dohyo_modifiers:before_delete_by(Module, Conditions, State),
+  Conditions2 = dohyo_model:unalias(Module, Conditions1),
+  sumo:delete_by(Module, Conditions2).
 
 %% @doc
 %% Alias sumo:delete_all/1 to keep consistent API.  Not validation or
@@ -97,8 +100,9 @@ delete_all(Module, _State) -> sumo:delete_all(Module).
 %% @doc Returns the doc identified by Id having run modifier.
 -spec find(sumo:schema_name(), sumo:field_value(), term()) -> sumo:user_doc().
 find(Module, Id, State) ->
-  Plist = sumo:find(Module, Id),
-  dohyo_modifiers:after_read(Module, Plist, State).
+  Plist1 = sumo:find(Module, Id),
+  Plist2 = dohyo_model:alias(Module, Plist1),
+  dohyo_modifiers:after_read(Module, Plist2, State).
 
 %% @doc
 %% Returns 1 doc that matches the given Conditions having run after_read
@@ -107,8 +111,10 @@ find(Module, Id, State) ->
 -spec find_one(sumo:schema_name(), sumo:conditions(), term()) ->
   sumo:user_doc().
 find_one(Module, Conditions, State) ->
-  Plist = sumo:find_one(Module, Conditions),
-  dohyo_modifiers:after_read(Module, Plist, State).
+  Conditions1 = dohyo_model:unalias(Module, Conditions),
+  Plist1 = sumo:find_one(Module, Conditions1),
+  Plist2 = dohyo_model:alias(Module, Plist1),
+  dohyo_modifiers:after_read(Module, Plist2, State).
 
 %% @doc
 %% Return all the docs from the given store having run the after_read
@@ -118,7 +124,10 @@ find_one(Module, Conditions, State) ->
 find_all(Module, State) ->
   dohyo_modifiers:after_read_many(
     Module,
-    [ dohyo_modifiers:after_read(Module, Plist, State) ||
+    [ dohyo_modifiers:after_read( Module,
+                                  dohyo_model:alias(Module, Plist),
+                                  State
+                                ) ||
         Plist <- sumo:find_all(Module)
     ],
     State
@@ -134,7 +143,10 @@ find_all(Module, State) ->
 find_all(Module, Sort, Limit, Offset, State) ->
   dohyo_modifiers:after_read_many(
     Module,
-    [ dohyo_modifiers:after_read(Module, Plist, State) ||
+    [ dohyo_modifiers:after_read( Module,
+                                  dohyo_model:alias(Module, Plist),
+                                  State
+                                ) ||
        Plist <- sumo:find_all(Module, Sort, Limit, Offset)
     ],
     State
@@ -145,10 +157,14 @@ find_all(Module, Sort, Limit, Offset, State) ->
 -spec find_by(sumo:schema_name(), sumo:conditions(), term()) ->
   [sumo:user_doc()].
 find_by(Module, Conditions, State) ->
+  Conditions1 = dohyo_model:unalias(Module, Conditions),
   dohyo_modifiers:after_read_many(
     Module,
-    [ dohyo_modifiers:after_read(Module, Plist, State) ||
-       Plist <- sumo:find_by(Module, Conditions)
+    [ dohyo_modifiers:after_read( Module,
+                                  dohyo_model:alias(Module, Plist),
+                                  State
+                                ) ||
+       Plist <- sumo:find_by(Module, Conditions1)
     ],
     State
   ).
@@ -159,10 +175,14 @@ find_by(Module, Conditions, State) ->
               non_neg_integer(), term()) ->
   [sumo:user_doc()].
 find_by(Module, Conditions, Limit, Offset, State) ->
+  Conditions1 = dohyo_model:unalias(Module, Conditions),
   dohyo_modifiers:after_read_many(
     Module,
-    [ dohyo_modifiers:after_read(Module, Plist, State) ||
-       Plist <- sumo:find_by(Module, Conditions, Limit, Offset)
+    [ dohyo_modifiers:after_read( Module,
+                                  dohyo_model:alias(Module, Plist),
+                                  State
+                                ) ||
+       Plist <- sumo:find_by(Module, Conditions1, Limit, Offset)
     ],
     State
   ).
@@ -173,21 +193,25 @@ find_by(Module, Conditions, Limit, Offset, State) ->
               non_neg_integer(), non_neg_integer(), term()) ->
   [sumo:user_doc()].
 find_by(Module, Conditions, Sort, Limit, Offset, State) ->
+  Conditions1 = dohyo_model:unalias(Module, Conditions),
   dohyo_modifiers:after_read_many(
     Module,
-    [ dohyo_modifiers:after_read(Module, Plist, State) ||
-       Plist <- sumo:find_by(Module, Conditions, Sort, Limit, Offset)
+    [ dohyo_modifiers:after_read( Module,
+                                  dohyo_model:alias(Module, Plist),
+                                  State
+                                ) ||
+       Plist <- sumo:find_by(Module, Conditions1, Sort, Limit, Offset)
     ],
     State
   ).
 
-%% @equiv field(Name, Type, []).
+%% @equiv field(Name, Type, #{}).
 -spec field(field_name(), field_type()) -> field().
 field(Name, Type) -> #field{name = Name, type = Type}.
 
 %% @doc Returns a field record to be used as part of a schema
--spec field(field_name(), field_type(), field_attrs()) -> field().
-field(Name, Type, Attrs) -> #field{name = Name, type = Type, attrs = Attrs}.
+-spec field(field_name(), field_type(), field_opts()) -> field().
+field(Name, Type, Opts) -> #field{name = Name, type = Type, options = Opts}.
 
 %% @equiv has_many(Name, []).
 -spec has_many(association_name()) -> association().

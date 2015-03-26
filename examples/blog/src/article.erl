@@ -34,9 +34,9 @@
 
 schema() ->
   [ % Fields
-    dohyo:field(id, integer, [id, not_null, auto_increment]),
-    dohyo:field(title, text, [not_null]),
-    dohyo:field(content, text, [not_null]),
+    dohyo:field(id, integer, #{ attrs => [id, not_null, auto_increment] }),
+    dohyo:field(title, text, #{ attrs => [not_null] }),
+    dohyo:field(content, text, #{ attrs => [not_null] }),
 
     % Associations
     dohyo:has_many(comments, #{schema => comment}),

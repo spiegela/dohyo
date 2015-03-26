@@ -539,7 +539,10 @@ has_many_as_special() ->
                options = #{schema => comment, foreign_key => special_id}}.
 
 author_schema() ->
-  [ #field{name = id, type = integer, attrs = [not_null, autoincrement]},
+  [ #field{ name = id,
+            type = integer,
+            options = #{ attrs => [not_null, autoincrement] }
+          },
     #field{name = name, type = string},
     #association{type = has_many, name = articles,
                  options = #{schema => article}},
@@ -548,7 +551,10 @@ author_schema() ->
   ].
 
 article_schema() ->
-  [ #field{name = id, type = integer, attrs = [not_null, autoincrement]},
+  [ #field{ name = id,
+            type = integer,
+            options = #{ attrs => [not_null, autoincrement] }
+          },
     #field{name = title, type = string},
     #field{name = content, type = text},
     #association{type = has_many, name = comments,

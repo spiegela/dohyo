@@ -28,7 +28,9 @@
 
 -include_lib("dohyo.hrl").
 
--export[fetch/3, fetch_ids/3, lookup/1, lookup/2, local_key/4].
+-export([fetch/3, fetch_ids/3, lookup/1, lookup/2, local_key/4]).
+
+-export([fetch_included/3]).
 
 -spec lookup(sumo:schema_name()) -> [association()].
 lookup(Module) ->
@@ -60,7 +62,7 @@ fetch_ids( Module,
   LKey    = local_key(belongs_to, Module, Name, Opts),
   {_, Id} = lists:keyfind(LKey, 1, Plist), Id.
 
--spec fetch( module(), association(), proplists:proplist()) ->
+-spec fetch(module(), association(), proplists:proplist()) ->
   proplists:proplist().
 fetch( Module,
        #association{ type = has_many, options = #{through := Through} }=Assoc,
@@ -124,7 +126,13 @@ params_to_conditions(Params) ->
       fun({Field, Val}) when is_integer(Val) ->
         string:join([atom_to_list(Field), integer_to_list(Val)], " = ");
           ({Field, Val}) when is_atom(Val) ->
-        string:join([atom_to_list(Field), atom_to_list(Val)], " = ")
+        string:join([atom_to_list(Field), atom_to_list(Val)], " = ");
+          ({Field, in, Val}) ->
+        string:join( [ atom_to_list(Field),
+                       binary_to_list(jiffy:encode(Val))
+                     ],
+                     " in "
+                   )
       end, Params
     ),
     " and "
@@ -146,12 +154,16 @@ maybe_polymorph(_Schema, _Module, _Opts) ->
 schema(_Type, _Name, #{schema := Schema}, _Plist) ->
   Schema;
 schema(belongs_to, Name, #{polymorphic := true}, Plist) ->
+  polymorph_schema(Name, Plist);
+schema(_Type, Name, _Opts, _Plist) ->
+  Name.
+
+-spec polymorph_schema(atom(), proplists:proplist()) -> atom().
+polymorph_schema(Name, Plist) ->
   case lists:keyfind(type_key(Name), 1, Plist) of
     false       -> error(badarg);
     {_, Schema} -> list_to_atom(Schema)
-  end;
-schema(_Type, Name, _Opts, _Plist) ->
-  Name.
+  end.
 
 -spec foreign_key(association_type(), atom(), module(), association_opts()) ->
   string().
@@ -176,6 +188,40 @@ local_key(belongs_to, _Module, Name, _Opts) ->
   list_to_atom(multiple_key(Name));
 local_key(has_many, Module, _Name, _Opts) ->
   list_to_atom(unary_key(Module)).
+
+-spec fetch_included(module(), association(), [sumo:user_doc()]) ->
+  {association_name(), {[{module(), [sumo:user_doc()]}]}}.
+fetch_included(Module, #association{type = has_many}=Assoc, Plists) ->
+  {Schema, Params} = include_query_params(has_many, Module, Assoc, Plists),
+  {Schema, fetch_included2(Module, Schema, Params)}.
+
+-spec fetch_included2(module(), atom(), [tuple()]) -> [sumo:user_doc()].
+fetch_included2(Module, Schema, Params) ->
+  Sql = lists:concat([ "select ", atom_to_list(Schema), ".* from ",
+                       atom_to_list(Schema), " where ",
+                       params_to_conditions(Params), ";"
+                     ]),
+  Pool = sumo_backend_mysql:get_pool(Module),
+  Results = sumo_store_mysql_extra:find_by_sql(Sql, Schema, {state, Pool}),
+  [dohyo_model:alias(Schema, Result) || Result <- Results].
+
+-spec include_query_params(
+        association_type(),
+        module(),
+        association(),
+        [proplists:proplist()]
+      ) -> {atom(), proplists:proplist()}.
+include_query_params( has_many,
+                      Module,
+                      #association{name = Name, options = Opts},
+                      Plists
+                    ) ->
+  LKey   = local_key(has_many, Module, Name, Opts),
+  Schema = schema(has_many, Name, Opts, Plists),
+  IDFun  = fun(Plist0) -> {_, ID} = lists:keyfind(LKey, 1, Plist0), ID end,
+  IDList = lists:map(IDFun, Plists),
+  FKey   = foreign_key(has_many, Schema, Module, Opts),
+  {Schema, [{FKey, in, IDList}]}.
 
 %% @private
 -spec type_key(atom()) -> string().

@@ -83,6 +83,9 @@ unit_test_() ->
     },
     { "Article collection fetches tags inclusion",
       article_fetch_tags_inclusion()
+    },
+    { "Comments fetch article inclusion",
+      comments_fetch_article_inclusion()
     }
   ].
 
@@ -517,7 +520,7 @@ article_fetch_tags_inclusion() ->
       meck:expect(tag, schema, [], tag_schema()),
       meck:expect(sumo_internal, id_field_name, ['_'], id),
       Sql = lists:concat( [ "select tag.* from tag ",
-                            "where tag.taggable_id in [2,3];"
+                            "where tag.taggable_id in [3,2];"
                           ]
                         ),
       Tags = [tag_1(), tag_2()],
@@ -530,6 +533,7 @@ article_fetch_tags_inclusion() ->
     end,
     fun(_) ->
       meck:unload(article),
+      meck:unload(tag),
       meck:unload(sumo_backend_mysql),
       meck:unload(sumo_store_mysql_extra),
       meck:unload(sumo_internal)
@@ -540,7 +544,80 @@ article_fetch_tags_inclusion() ->
                  has_many_tags_as_taggable(),
                  [article_2(), article_3()]
                ),
-      ?assertEqual({tag, [tag_1(), tag_2()]}, Result)
+      ?assertEqual([{tag, [tag_1(), tag_2()]}], Result)
+    end
+  }.
+  
+tags_fetch_article_inclusion() ->
+  { setup,
+    fun() ->
+      meck:new(tag, [non_strict]),
+      meck:expect(tag, schema, [], tag_schema()),
+      meck:new(article, [non_strict]),
+      meck:expect(article, schema, [], article_schema()),
+      meck:new(page, [non_strict]),
+      meck:expect(page, schema, [], page_schema()),
+      meck:expect(sumo_internal, id_field_name, ['_'], id),
+      meck:expect(sumo_backend_mysql, get_pool, [tag], fakepool),
+      meck:expect( sumo_store_mysql_extra,
+                   find_by_sql,
+                   fun( "select article.* from article where article.id in [3];",
+                        article, {state, fakepool}) ->
+                     [article_3()];
+                      ( "select page.* from page where page.id in [1];",
+                        page, {state, fakepool}) ->
+                     [page_1()]
+                   end
+                 )
+    end,
+    fun(_) ->
+      meck:unload(tag),
+      meck:unload(article),
+      meck:unload(page),
+      meck:unload(sumo_backend_mysql),
+      meck:unload(sumo_store_mysql_extra),
+      meck:unload(sumo_internal)
+    end,
+    fun() ->
+      Result = dohyo_associations:fetch_included(
+                 tag,
+                 belongs_to_taggable(),
+                 [tag_1(), tag_2()]
+               ),
+      ?assertEqual([{page, [page_1()]}, {article, [article_3()]}], Result)
+    end
+  }.
+  
+comments_fetch_article_inclusion() ->
+  { setup,
+    fun() ->
+      meck:new(comment, [non_strict]),
+      meck:expect(comment, schema, [], comment_schema()),
+      meck:new(article, [non_strict]),
+      meck:expect(article, schema, [], article_schema()),
+      meck:expect(sumo_internal, id_field_name, ['_'], id),
+      meck:expect(sumo_backend_mysql, get_pool, [comment], fakepool),
+      Sql =  "select article.* from article where article.id in [3,2];",
+      meck:expect( sumo_store_mysql_extra,
+                   find_by_sql,
+                   [Sql, article, {state, fakepool}],
+                   [article_2(), article_3()]
+                 )
+    end,
+    fun(_) ->
+      meck:unload(comment),
+      meck:unload(article),
+      meck:unload(sumo_backend_mysql),
+      meck:unload(sumo_store_mysql_extra),
+      meck:unload(sumo_internal)
+    end,
+    fun() ->
+      Result = dohyo_associations:fetch_included(
+                 comment,
+                 belongs_to_article(),
+                 [comment_1(), comment_2(), comment_3(), comment_4()]
+               ),
+      ?assertEqual([{article, [article_2(), article_3()]}], Result)
     end
   }.
   
@@ -566,19 +643,19 @@ comment_2() -> [ {id, 4}, {article_id, 3}, {commenter_id, 4} ].
 
 comment_3() -> [ {id, 5}, {article_id, 3}, {commenter_id, 5} ].
 
+comment_4() -> [ {id, 6}, {article_id, 2}, {commenter_id, 3} ].
+
 comment_list() -> [comment_1(), comment_2(), comment_3()].
 
 tag_1() -> [ {id, 1},
              {taggable_type, "page"},
              {taggable_id, 1},
-             {article_id, 1},
              {name, "None"}
            ].
 
 tag_2() -> [ {id, 2},
              {taggable_type, "article"},
              {taggable_id, 3},
-             {article_id, 3},
              {name, "Programming"}
            ].
 
@@ -612,6 +689,9 @@ tag_family_2() -> [ {id, 2},
 belongs_to_author() ->
   #association{type = belongs_to, name = author}.
 
+belongs_to_article() ->
+  #association{type = belongs_to, name = article}.
+
 foreign_key_belongs_to_author() ->
   #association{type = belongs_to, name = author,
                options = #{foreign_key => alternate_id}}.
@@ -627,9 +707,6 @@ has_many_comments() ->
 has_many_tags_as_taggable() ->
   #association{type = has_many, name = tags,
                options = #{schema => tag, as => taggable}}.
-
-has_many_tags() ->
-  #association{type = has_many, name = tags, options = #{schema => tag}}.
 
 has_many_tags_through() ->
   #association{type = has_many, name = tags,

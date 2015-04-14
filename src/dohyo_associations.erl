@@ -98,26 +98,16 @@ fetch(Module, #association{type = belongs_to}=Assoc, Plist) ->
         association(),
         proplists:proplist()
        ) -> {atom(), proplists:proplist()}.
-query_params( has_many,
+query_params( Type,
               Module,
               #association{name = Name, options = Opts},
               Plist
             ) ->
-  LKey    = local_key(has_many, Module, Name, Opts),
+  LKey    = local_key(Type, Module, Name, Opts),
   {_, ID} = lists:keyfind(LKey, 1, Plist),
-  Schema  = schema(has_many, Name, Opts, Plist),
-  FKey    = foreign_key(has_many, Schema, Module, Opts),
-  {Schema, [{FKey, ID}|maybe_polymorph(Schema, Module, Opts)]};
-query_params( belongs_to,
-              Module,
-              #association{name = Name, options = Opts},
-              Plist
-            ) ->
-  LKey    = local_key(belongs_to, Module, Name, Opts),
-  {_, ID} = lists:keyfind(LKey, 1, Plist),
-  Schema  = schema(belongs_to, Name, Opts, Plist),
-  FKey    = foreign_key(belongs_to, Schema, Module, Opts),
-  {Schema, [{FKey, ID}]}.
+  Schema  = schema(Type, Name, Opts, Plist),
+  FKey    = foreign_key(Type, Schema, Module, Opts),
+  {Schema, [{FKey, ID}|maybe_polymorph(Type, Schema, Module, Opts)]}.
 
 -spec params_to_conditions(proplists:proplist()) -> string().
 params_to_conditions(Params) ->
@@ -138,11 +128,17 @@ params_to_conditions(Params) ->
     " and "
   ).
 
--spec maybe_polymorph(module(), module(), association_opts()) ->
+-spec maybe_polymorph( association_type(),
+                       module(),
+                       module(),
+                       association_opts()
+                     ) ->
   proplists:proplist().
-maybe_polymorph(Schema, Module, #{as := PolyKey}) ->
+maybe_polymorph(belongs_to, _Schema, _Module, _Opts) ->
+  [];
+maybe_polymorph(_Type, Schema, Module, #{as := PolyKey}) ->
   [ { type_key(Schema, PolyKey), Module } ];
-maybe_polymorph(_Schema, _Module, _Opts) ->
+maybe_polymorph(_Type, _Schema, _Module, _Opts) ->
   [].
 
 -spec schema(
@@ -157,6 +153,14 @@ schema(belongs_to, Name, #{polymorphic := true}, Plist) ->
   polymorph_schema(Name, Plist);
 schema(_Type, Name, _Opts, _Plist) ->
   Name.
+
+-spec polymorph_schemas(atom(), [proplists:proplist()]) -> [atom()].
+polymorph_schemas(Name, Plists) ->
+  Fun = fun(Plist, Set) ->
+          sets:add_element(polymorph_schema(Name, Plist), Set)
+        end,
+  sets:to_list(lists:foldl(Fun, sets:new(), Plists)).
+
 
 -spec polymorph_schema(atom(), proplists:proplist()) -> atom().
 polymorph_schema(Name, Plist) ->
@@ -191,9 +195,10 @@ local_key(has_many, Module, _Name, _Opts) ->
 
 -spec fetch_included(module(), association(), [sumo:user_doc()]) ->
   {association_name(), {[{module(), [sumo:user_doc()]}]}}.
-fetch_included(Module, #association{type = has_many}=Assoc, Plists) ->
-  {Schema, Params} = include_query_params(has_many, Module, Assoc, Plists),
-  {Schema, fetch_included2(Module, Schema, Params)}.
+fetch_included(Module, Assoc, Plists) ->
+  [ {Schema, fetch_included2(Module, Schema, Params)} ||
+      {Schema, Params} <- include_query_params(Module, Assoc, Plists)
+  ].
 
 -spec fetch_included2(module(), atom(), [tuple()]) -> [sumo:user_doc()].
 fetch_included2(Module, Schema, Params) ->
@@ -206,23 +211,48 @@ fetch_included2(Module, Schema, Params) ->
   [dohyo_model:alias(Schema, Result) || Result <- Results].
 
 -spec include_query_params(
-        association_type(),
         module(),
         association(),
         [proplists:proplist()]
       ) -> {atom(), proplists:proplist()}.
-include_query_params( has_many,
-                      Module,
-                      #association{name = Name, options = Opts},
+include_query_params( Module,
+                      #association{ type = belongs_to,
+                                    name = Name,
+                                    options = #{polymorphic := true}=Opts
+                                  },
                       Plists
                     ) ->
-  LKey   = local_key(has_many, Module, Name, Opts),
-  Schema = schema(has_many, Name, Opts, Plists),
+  LKey = local_key(belongs_to, Module, Name, Opts),
+  lists:map( fun(Schema) ->
+               SchemaStr = atom_to_list(Schema),
+               IDFun  = fun(Plist0) ->
+                          case lists:keyfind(type_key(Name), 1, Plist0) of
+                            false ->
+                              false;
+                            {_, SchemaStr} ->
+                              {_, ID} = lists:keyfind(LKey, 1, Plist0),
+                              {true, ID};
+                            {_, _OtherSchemaStr} ->
+                              false
+                          end
+                        end,
+               IDList = lists:filtermap(IDFun, Plists),
+               FKey   = foreign_key(belongs_to, Schema, Module, Opts),
+               {Schema, [{FKey, in, sets:to_list(sets:from_list(IDList))}]}
+             end,
+             polymorph_schemas(Name, Plists)
+           );
+include_query_params( Module,
+                      #association{type = Type, name = Name, options = Opts},
+                      Plists
+                    ) ->
+  LKey   = local_key(Type, Module, Name, Opts),
+  Schema = schema(Type, Name, Opts, Plists),
   IDFun  = fun(Plist0) -> {_, ID} = lists:keyfind(LKey, 1, Plist0), ID end,
   IDList = lists:map(IDFun, Plists),
-  FKey   = foreign_key(has_many, Schema, Module, Opts),
-  {Schema, [{FKey, in, IDList}]}.
-
+  FKey   = foreign_key(Type, Schema, Module, Opts),
+  [{Schema, [{FKey, in, sets:to_list(sets:from_list(IDList))}]}].
+ 
 %% @private
 -spec type_key(atom()) -> string().
 type_key(Module) -> list_to_atom(lists:concat([atom_to_list(Module), "_type"])).

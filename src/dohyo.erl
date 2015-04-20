@@ -42,7 +42,8 @@
 %%%
 -export([associate/3, associate_all/2, association/3, all_associations/2,
          associate_ids/3, association_ids/3, associate_all_ids/2,
-         all_association_ids/2]).
+         all_association_ids/2, included/3, all_included/2, include_into/3,
+         include_all_into/2]).
 
 %%%
 %%% API for model definition
@@ -438,12 +439,67 @@ all_association_ids(Module, Plist) ->
              dohyo_associations:lookup(Module)
            ).
 
+%% @doc
+%% Returns a property (tuple) with included associations of a list of documents.
+%% @end
+-spec included(sumo:schema_name(), association_name(), sumo:user_doc()) ->
+  [sumo:user_doc()].
+included(Module, Name, Plists) ->
+  dohyo_associations:fetch_included( Module,
+                                     dohyo_associations:lookup(Module, Name),
+                                     Plists
+                                   ).
+
+%% @doc
+%% Returns list of property lists with included associations inserted into each
+%% document.
+%% @end
+-spec include_into(sumo:schema_name(), association_name(), sumo:user_doc()) ->
+  [sumo:user_doc()].
+include_into(Module, Name, Plists) ->
+  #association{type = Type, options = Opts} = Assoc =
+    dohyo_associations:lookup(Module, Name),
+  Included = dohyo_associations:fetch_included(Module, Assoc, Plists),
+  LKey = dohyo_associations:local_key(Type, Module, Name, Opts),
+  lists:map( fun(Plist) ->
+               IDList = lists:keyfind(Name, 1, Plist),
+               IncFun = fun(AssocPlist) ->
+                          ID = lists:keyfind(LKey, 1, AssocPlist),
+                          lists:member(ID, IDList)
+                        end,
+               ToInclude = lists:filter(IncFun, Included),
+               lists:keystore(Name, 1, Plist, {Name, ToInclude})
+             end,
+             lists
+           ).
+
+%% @doc
+%% Returns a property list with all included associations of a list of
+%% documents.
+%% @end
+all_included(Module, Plists) ->
+  lists:concat(
+    lists:map( fun(Assoc) ->
+                 dohyo_associations:fetch_included(Module, Assoc, Plists)
+               end,
+               dohyo_associations:lookup(Module)
+    )
+  ).
+
+%% @doc
+%% Returns list of property lists with all included associations inserted into
+%% each document.
+%% @end
+-spec include_all_into(sumo:schema_name(), sumo:user_doc()) ->
+  [sumo:user_doc()].
 %% @private
--spec store_association(
-        association(),
-        {sumo:schema_name(), sumo:user_doc()}
-       ) ->
-  sumo:user_doc().
+include_all_into(Module, Plists) ->
+  lists:map( fun(#association{name = Name}) ->
+               include_into(Module, Name, Plists)
+             end,
+             dohyo_associations:lookup(Module)
+           ).
+
 store_association(#association{name = Name}=Assoc, {Module, Plist}) ->
   { Module,
     lists:keystore( Name, 1, Plist,

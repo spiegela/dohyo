@@ -198,6 +198,18 @@ unit_test_() ->
          fun unload_assoc_mocks/1,
          fun embeds_all_association_ids/0
        }
+    },
+    { "fetches inclusion",
+      fetches_inclusion()
+    },
+    { "embeds inclusion",
+      embeds_inclusion()
+    },
+    { "fetches all inclusions",
+      fetches_all_inclusions()
+    },
+    { "embeds all inclusions",
+      embeds_all_inclusions()
     }
   ].
 
@@ -507,6 +519,104 @@ embeds_all_association_ids() ->
     ?assertEqual(Login ++ [{roles, [1, 2, 3]}, {account, 12}], Login2)
   ].
 
+fetches_inclusion() ->
+  { setup,
+    fun setup_assoc_mocks/0,
+    fun unload_assoc_mocks/1,
+    fun() ->
+      IncLogins = dohyo:included(role, login, roles()),
+      [ ?assert(meck:validate(role)),
+        ?assertEqual(1, meck:num_calls(role, schema, [])),
+        ?assert(meck:validate(login)),
+        ?assertEqual(1, meck:num_calls(login, schema, [])),
+        ?assert(meck:validate(sumo)),
+        ?assertEqual(1, meck:num_calls( sumo_store_mysql_extra,
+                                        find_by_sql,
+                                        login_find_by_sql_args()
+                                      )
+                    ),
+        ?assertEqual([{login, [aliased_login()]}], IncLogins)
+      ]
+    end
+  }.
+
+embeds_inclusion() ->
+  { setup,
+    fun setup_assoc_mocks/0,
+    fun unload_assoc_mocks/1,
+    fun() ->
+      Role2 = dohyo:include_into(role, login, roles()),
+      [ ?assert(meck:validate(role)),
+        ?assertEqual(1, meck:num_calls(role, schema, [])),
+        ?assert(meck:validate(login)),
+        ?assertEqual(1, meck:num_calls(login, schema, [])),
+        ?assert(meck:validate(sumo)),
+        ?assertEqual(1, meck:num_calls( sumo_store_mysql_extra,
+                                        find_by_sql,
+                                        login_find_by_sql_args()
+                                      )
+                    ),
+        ?assertEqual(roles_embedded_login(), Role2)
+      ]
+    end
+  }.
+
+fetches_all_inclusions() ->
+  { setup,
+    fun setup_assoc_mocks/0,
+    fun unload_assoc_mocks/1,
+    fun() ->
+      AllIncs = dohyo:all_included(login, [login(), login_2()]),
+      [ ?assert(meck:validate(login)),
+        ?assertEqual(1, meck:num_calls(login, schema, [])),
+        ?assert(meck:validate(role)),
+        ?assertEqual(4, meck:num_calls(role, schema, [])),
+        ?assert(meck:validate(sumo)),
+        ?assertEqual(1, meck:num_calls( sumo_store_mysql_extra,
+                                        find_by_sql,
+                                        role_find_by_sql_args()
+                                      )
+                    ),
+        ?assertEqual(1, meck:num_calls( sumo_store_mysql_extra,
+                                        find_by_sql,
+                                        account_find_by_sql_args()
+                                      )
+                    ),
+        ?assertEqual( [{role, aliased_roles_2()},{account, [account()]}],
+                      AllIncs
+                    )
+      ]
+    end
+  }.
+
+embeds_all_inclusions() ->
+  { setup,
+    fun setup_assoc_mocks/0,
+    fun unload_assoc_mocks/1,
+    fun() ->
+      Login2 = dohyo:include_all_into(login, [login(), login_2()]),
+      [ ?assert(meck:validate(login)),
+        ?assertEqual(1, meck:num_calls(login, schema, [])),
+        ?assert(meck:validate(role)),
+        ?assertEqual(4, meck:num_calls(role, schema, [])),
+        ?assert(meck:validate(account)),
+        ?assertEqual(1, meck:num_calls(account, schema, [])),
+        ?assert(meck:validate(sumo)),
+        ?assertEqual(1, meck:num_calls( sumo_store_mysql_extra,
+                                        find_by_sql,
+                                        role_find_by_sql_args()
+                                      )
+                    ),
+        ?assertEqual(1, meck:num_calls( sumo_store_mysql_extra,
+                                        find_by_sql,
+                                        account_find_by_sql_args()
+                                      )
+                    ),
+        ?assertEqual(logins_embedded_all(), Login2)
+      ]
+    end
+  }.
+
 %%% Setup Functions
 
 setup_mocks() ->
@@ -534,7 +644,25 @@ setup_mocks() ->
   meck:expect(sumo, find_all, [login, username, 10, 10], Plists),
   meck:expect(sumo, find_by, [login, Conditions], Plists),
   meck:expect(sumo, find_by, [login, Conditions, 10, 10], Plists),
-  meck:expect(sumo, find_by, [login, Conditions, username, 10, 10], Plists).  
+  meck:expect(sumo, find_by, [login, Conditions, username, 10, 10], Plists).
+
+login_find_by_sql_args() ->
+  [ "select login.* from login where login.id in [5];",
+    login,
+    {state, fakepool}
+  ].
+
+role_find_by_sql_args() ->
+  [ "select role.* from role where role.login_id in [6,5];",
+    role,
+    {state, fakepool}
+  ].
+
+account_find_by_sql_args() ->
+  [ "select account.* from account where account.id in [12];",
+    account,
+    {state, fakepool}
+  ].
 
 setup_assoc_mocks() ->
   meck:new(login, [non_strict]),
@@ -545,7 +673,28 @@ setup_assoc_mocks() ->
   meck:expect(account, schema, [], account_schema()),
   meck:expect(sumo, find_one, [account, [{'account.id', 12}]], account()),
   meck:expect(sumo, find_by, [role, [{'role.login_id', 5}]], roles()),
-  meck:expect(sumo_internal, id_field_name, ['_'], id).
+  meck:expect(sumo_internal, id_field_name, ['_'], id),
+  meck:expect(sumo_backend_mysql, get_pool, ['_'], fakepool),
+  meck:expect( sumo_store_mysql_extra,
+               find_by_sql,
+               fun( "select login.* from login where login.id in [6,5];",
+                    login,
+                    {state, fakepool}
+                  ) -> [login_2(), login()];
+                  ( "select login.* from login where login.id in [5];",
+                    login,
+                    {state, fakepool}
+                  ) -> [login()];
+                  ( "select role.* from role where role.login_id in [6,5];",
+                    role,
+                    {state, fakepool}
+                  ) -> roles_2();
+                  ( "select account.* from account where account.id in [12];",
+                    account,
+                    {state, fakepool}
+                  ) -> [account()]
+               end
+             ).
 
 unload_mocks(_) ->
   meck:unload(login),
@@ -557,6 +706,7 @@ unload_assoc_mocks(_) ->
   meck:unload(role),
   meck:unload(account),
   meck:unload(sumo),
+  meck:unload(sumo_store_mysql_extra),
   meck:unload(sumo_internal).
 
 %%% Fixtures
@@ -595,6 +745,14 @@ login() ->
     {account_id, 12}
   ].
 
+login_2() ->
+  [ {id, 6},
+    {username, "test"},
+    {password, "12345"},
+    {password_confirm, "12345"},
+    {account_id, 12}
+  ].
+
 aliased_login() ->
   [ {id, 5},
     {email, "spiegela"},
@@ -618,6 +776,104 @@ roles() ->
     ]
   ].
 
+roles_2() ->
+  [ [ {id, 1},
+      {login_id, 5},
+      {name, "admin"}
+    ],
+    [ {id, 2},
+      {login_id, 5},
+      {name, "user"}
+    ],
+    [ {id, 3},
+      {login_id, 5},
+      {name, "operator"}
+    ],
+    [ {id, 4},
+      {login_id, 6},
+      {name, "user"}
+    ]
+  ].
+
+roles_embedded_login() ->
+  [ [ { id, 1 },
+      { login_id, 5 },
+      { name, "admin" },
+      { login, [ { id, 5 },
+                 { email, "spiegela" },
+                 { password, "12345" },
+                 { password_confirm, "12345" },
+                 { account_id, 12 }
+               ]
+      }
+    ],
+    [ { id, 2 },
+      { login_id, 5 },
+      { name, "user" },
+      { login, [ { id, 5 },
+                 { email, "spiegela" },
+                 { password, "12345" },
+                 { password_confirm, "12345" },
+                 { account_id, 12 }
+               ]
+      }
+    ],
+    [ { id, 3 },
+      { login_id, 5 },
+      { name, "operator" },
+      { login, [ { id, 5 },
+                 { email, "spiegela" },
+                 { password, "12345" },
+                 { password_confirm, "12345" },
+                 { account_id, 12 }
+               ]
+      }
+    ]
+  ].
+
+logins_embedded_all() ->
+  [ [ {id, 5},
+      {username, "spiegela"},
+      {password, "12345"},
+      {password_confirm, "12345"},
+      {account_id, 12},
+      {roles, [ [ {id, 1},
+                  {login_id, 5},
+                  {role, "admin"}
+                ],
+                [ {id, 2},
+                  {login_id, 5},
+                  {role, "user"}
+                ],
+                [ {id, 3},
+                  {login_id, 5},
+                  {role, "operator"}
+                ]
+              ]
+      },
+      {account, [ {id, 12},
+                  {name, "Acme Corp"}
+                ]
+      }
+    ],
+    [ {id, 6},
+      {username, "test"},
+      {password, "12345"},
+      {password_confirm, "12345"},
+      {account_id, 12},
+      {roles, [ [ {id, 4},
+                  {login_id, 6},
+                  {role, "user"}
+                ]
+              ]
+      },
+      {account, [ {id, 12},
+                  {name, "Acme Corp"}
+                ]
+      }
+    ]
+  ].
+
 aliased_roles() ->
   [ [ {id, 1},
       {login_id, 5},
@@ -630,6 +886,25 @@ aliased_roles() ->
     [ {id, 3},
       {login_id, 5},
       {role, "operator"}
+    ]
+  ].
+
+aliased_roles_2() ->
+  [ [ {id, 1},
+      {login_id, 5},
+      {role, "admin"}
+    ],
+    [ {id, 2},
+      {login_id, 5},
+      {role, "user"}
+    ],
+    [ {id, 3},
+      {login_id, 5},
+      {role, "operator"}
+    ],
+    [ {id, 4},
+      {login_id, 6},
+      {role, "user"}
     ]
   ].
 

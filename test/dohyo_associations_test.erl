@@ -30,8 +30,6 @@
 
 -include("../src/dohyo.hrl").
 
--compile(export_all).
-
 %%% Unit Test Descriptions
 
 unit_test_() ->
@@ -83,6 +81,9 @@ unit_test_() ->
     },
     { "Article collection fetches tags inclusion",
       article_fetch_tags_inclusion()
+    },
+    { "Tag collection fetches taggable inclusion",
+      tags_fetch_taggable_inclusion()
     },
     { "Comments fetch article inclusion",
       comments_fetch_article_inclusion()
@@ -548,7 +549,7 @@ article_fetch_tags_inclusion() ->
     end
   }.
   
-tags_fetch_article_inclusion() ->
+tags_fetch_taggable_inclusion() ->
   { setup,
     fun() ->
       meck:new(tag, [non_strict]),
@@ -620,7 +621,7 @@ comments_fetch_article_inclusion() ->
       ?assertEqual([{article, [article_2(), article_3()]}], Result)
     end
   }.
-  
+
 %%% Fixtures
 
 article_2() ->

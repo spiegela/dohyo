@@ -456,22 +456,19 @@ included(Module, Name, Plists) ->
 %% @end
 -spec include_into(sumo:schema_name(), association_name(), sumo:user_doc()) ->
   [sumo:user_doc()].
-include_into(Module, Name, Plists) ->
-  #association{type = Type, options = Opts} = Assoc =
-    dohyo_associations:lookup(Module, Name),
-  Included = dohyo_associations:fetch_included(Module, Assoc, Plists),
-  LKey = dohyo_associations:local_key(Type, Module, Name, Opts),
-  lists:map( fun(Plist) ->
-               IDList = lists:keyfind(Name, 1, Plist),
-               IncFun = fun(AssocPlist) ->
-                          ID = lists:keyfind(LKey, 1, AssocPlist),
-                          lists:member(ID, IDList)
-                        end,
-               ToInclude = lists:filter(IncFun, Included),
-               lists:keystore(Name, 1, Plist, {Name, ToInclude})
-             end,
-             lists
-           ).
+include_into(Module, Name, Plists) when is_atom(Name) ->
+  include_into(Module, dohyo_associations:lookup(Module, Name), Plists);
+include_into(Module, #association{name = Name}=Assoc, Plists) ->
+  Includes = dohyo_associations:fetch_included(Module, Assoc, Plists),
+  IncFun = fun(Plist) ->
+             Embed = dohyo_associations:select_associated( Module,
+                                                           Assoc,
+                                                           Plist,
+                                                           Includes
+                                                         ),
+             lists:keystore(Name, 1, Plist, {Name, Embed})
+           end,
+  lists:map(IncFun, Plists).
 
 %% @doc
 %% Returns a property list with all included associations of a list of
@@ -494,11 +491,12 @@ all_included(Module, Plists) ->
   [sumo:user_doc()].
 %% @private
 include_all_into(Module, Plists) ->
-  lists:map( fun(#association{name = Name}) ->
-               include_into(Module, Name, Plists)
-             end,
-             dohyo_associations:lookup(Module)
-           ).
+  lists:foldl( fun(Assoc, Plists0) ->
+                 include_into(Module, Assoc, Plists0)
+               end,
+               Plists,
+               dohyo_associations:lookup(Module)
+             ).
 
 store_association(#association{name = Name}=Assoc, {Module, Plist}) ->
   { Module,
